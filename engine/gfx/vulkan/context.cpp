@@ -419,7 +419,7 @@ bool Context::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice) {
         swapChainAdequate = !swapChainSupportDetails.formats.empty() && !swapChainSupportDetails.presentModes.empty();
     }
 
-    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
 void Context::pickPhysicalDevice() {

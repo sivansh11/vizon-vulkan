@@ -26,7 +26,7 @@
 
 int main(int argc, char **argv) {
     auto window = std::make_shared<core::Window>("VIZON-vulkan", 800, 600);
-    auto context = std::make_shared<gfx::vulkan::Context>(window, 1, true);
+    auto context = std::make_shared<gfx::vulkan::Context>(window, 2, true);
     auto dispatcher = std::make_shared<event::Dispatcher>();
 
     core::Material::init(context);
@@ -45,22 +45,34 @@ int main(int argc, char **argv) {
     auto test = gfx::vulkan::DescriptorSetLayout::Builder{}
         .build(context);
 
-    double lastTime = glfwGetTime();
+    // double lastTime = glfwGetTime();
     float targetFPS = 5000.f;
 
     EditorCamera editorCamera{window};
 
+    auto lastTime = std::chrono::system_clock::now();
+
     while (!window->shouldClose()) {
         window->pollEvents();
 
-        double currentTime = glfwGetTime(); 
-        float dt = currentTime - lastTime;
-        if (currentTime - lastTime < 1.f / targetFPS) {
+        auto currentTime = std::chrono::system_clock::now();
+        auto dt = currentTime - lastTime;
+        if (dt.count() / 1e6 < 1000.f / targetFPS) {
             continue;
-        } 
-        lastTime = currentTime; 
+        }
+        lastTime = currentTime;
 
-        editorCamera.onUpdate(dt);
+        auto ms = dt.count() / float(1e6);
+        std::cout << dt.count() / 1e6 << ' ' << 1000.f / ms << '\n';
+
+        // double currentTime = glfwGetTime(); 
+        // float dt = currentTime - lastTime;
+        // if (currentTime - lastTime < 1.f / targetFPS) {
+        //     continue;
+        // } 
+        // lastTime = currentTime; 
+
+        editorCamera.onUpdate(dt.count() / 1e6);
 
         renderer.render(scene, editorCamera);
     }

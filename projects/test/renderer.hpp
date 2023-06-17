@@ -69,7 +69,6 @@ private:
     std::shared_ptr<gfx::vulkan::DescriptorSetLayout> swapChainPipelineDescriptorSetLayout;
     std::shared_ptr<gfx::vulkan::DescriptorSet> swapChainPipelineDescriptorSet;
     std::shared_ptr<gfx::vulkan::Pipeline> swapChainPipeline;
-
 };
 
 #endif
