@@ -576,7 +576,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		ssaoSet0UBO.projection = camera.getProjection();
 		ssaoSet0UBO.invView = glm::inverse(ssaoSet0UBO.view);
 		ssaoSet0UBO.invProjection = glm::inverse(ssaoSet0UBO.projection);
-		ssaoSet0UBO.radius = 0.5;
+		ssaoSet0UBO.radius = 0.1;
 		ssaoSet0UBO.bias = 0.025;
 		std::memcpy(ssaoSet0UniformBufferMap[context->currentFrame()], &ssaoSet0UBO, sizeof(SsaoSet0UBO));
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipelineLayout(), 0, 1, &ssaoSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
