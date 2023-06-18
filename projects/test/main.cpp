@@ -34,7 +34,6 @@ int main(int argc, char **argv) {
     Renderer renderer{window, context, dispatcher};
 
     std::shared_ptr<entt::registry> scene = std::make_shared<entt::registry>();
-    
 
     {
         auto ent = scene->create();
@@ -64,13 +63,6 @@ int main(int argc, char **argv) {
 
         auto ms = dt.count() / float(1e6);
         std::cout << dt.count() / 1e6 << ' ' << 1000.f / ms << '\n';
-
-        // double currentTime = glfwGetTime(); 
-        // float dt = currentTime - lastTime;
-        // if (currentTime - lastTime < 1.f / targetFPS) {
-        //     continue;
-        // } 
-        // lastTime = currentTime; 
 
         editorCamera.onUpdate(dt.count() / 1e6);
 

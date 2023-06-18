@@ -168,6 +168,75 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, position))
 		.build(context, shadowRenderPass->renderPass());
 
+	ssaoRenderPass = gfx::vulkan::RenderPass::Builder{}
+		.addColorAttachment(VkAttachmentDescription{
+			.format = VK_FORMAT_R16_SFLOAT,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
+		})
+		.build(context);
+
+	ssaoDescriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addLayoutBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.build(context);
+
+	noise = gfx::vulkan::Image::Builder{}
+		.loadFromPath(context, "../../assets/textures/noise.jpg");
+
+	ssaoImage = gfx::vulkan::Image::Builder{}
+		.build2D(context, width, height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	ssaoFramebuffer = gfx::vulkan::Framebuffer::Builder{}
+		.addAttachmentView(ssaoImage->imageView())
+		.build(context, ssaoRenderPass->renderPass(), width, height);
+
+	ssaoPipeline = gfx::vulkan::Pipeline::Builder{}
+		.addShader("../../assets/shaders/ssao/base.vert.spv")
+		.addShader("../../assets/shaders/ssao/base.frag.spv")
+		.addDefaultColorBlendAttachmentState()
+		.addDescriptorSetLayout(ssaoDescriptorSetLayout0)
+		.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+		.addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+		.build(context, ssaoRenderPass->renderPass());
+
+	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
+		ssaoSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
+			.build(context, ssaoDescriptorSetLayout0));
+		
+		ssaoSet0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+			.build(context, sizeof(SsaoSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+		
+		ssaoSet0UniformBufferMap.push_back(ssaoSet0UniformBuffer[i]->map());
+
+		ssaoSet0[i]->write()
+			.pushImageInfo(0, 1, VkDescriptorImageInfo{
+				.sampler = gBufferDepthImage->sampler(),
+				.imageView = gBufferDepthImage->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushImageInfo(1, 1, VkDescriptorImageInfo{
+				.sampler = gBufferNormalImage->sampler(),
+				.imageView = gBufferNormalImage->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushImageInfo(2, 1, VkDescriptorImageInfo{
+				.sampler = noise->sampler(),
+				.imageView = noise->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushBufferInfo(3, 1, VkDescriptorBufferInfo{
+				.buffer = ssaoSet0UniformBuffer[i]->buffer(),
+				.offset = 0,
+				.range = sizeof(SsaoSet0UBO)
+			})
+			.update();
+	}
 
 	compositeRenderPass = gfx::vulkan::RenderPass::Builder{}
 		.addColorAttachment(VkAttachmentDescription{
@@ -192,7 +261,8 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-		.addLayoutBinding(4, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addLayoutBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addLayoutBinding(5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build(context);
 
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
@@ -225,7 +295,12 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 				.imageView = shadowMapImage->imageView(),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
-			.pushBufferInfo(4, 1, VkDescriptorBufferInfo{
+			.pushImageInfo(4, 1, VkDescriptorImageInfo{
+				.sampler = ssaoImage->sampler(),
+				.imageView = ssaoImage->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushBufferInfo(5, 1, VkDescriptorBufferInfo{
 				.buffer = compositeSet0UniformBuffer[i]->buffer(),
 				.offset = 0,
 				.range = sizeof(CompositeSet0UBO)
@@ -275,6 +350,7 @@ Renderer::~Renderer() {
 		set1UniformBuffer[i]->unmap();
 		shadowSet0UniformBuffer[i]->unmap();
 		compositeSet0UniformBuffer[i]->unmap();
+		ssaoSet0UniformBuffer[i]->unmap();
 	}	
     INFO("Destroyed Renderer");
 }
@@ -298,6 +374,38 @@ void Renderer::recreateDimentionDependentResources() {
 		.addAttachmentView(gBufferNormalImage->imageView())
 		.addAttachmentView(gBufferDepthImage->imageView())
 		.build(context, deferredRenderPass->renderPass(), width, height);
+
+	ssaoImage = gfx::vulkan::Image::Builder{}
+		.build2D(context, width, height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	ssaoFramebuffer = gfx::vulkan::Framebuffer::Builder{}
+		.addAttachmentView(ssaoImage->imageView())
+		.build(context, ssaoRenderPass->renderPass(), width, height);
+
+	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
+		ssaoSet0[i]->write()
+			.pushImageInfo(0, 1, VkDescriptorImageInfo{
+				.sampler = gBufferDepthImage->sampler(),
+				.imageView = gBufferDepthImage->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushImageInfo(1, 1, VkDescriptorImageInfo{
+				.sampler = gBufferNormalImage->sampler(),
+				.imageView = gBufferNormalImage->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushImageInfo(2, 1, VkDescriptorImageInfo{
+				.sampler = noise->sampler(),
+				.imageView = noise->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushBufferInfo(3, 1, VkDescriptorBufferInfo{
+				.buffer = ssaoSet0UniformBuffer[i]->buffer(),
+				.offset = 0,
+				.range = sizeof(SsaoSet0UBO)
+			})
+			.update();
+	}
 
 	compositeImage = gfx::vulkan::Image::Builder{}
 		.build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -328,7 +436,12 @@ void Renderer::recreateDimentionDependentResources() {
 				.imageView = shadowMapImage->imageView(),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
-			.pushBufferInfo(4, 1, VkDescriptorBufferInfo{
+			.pushImageInfo(4, 1, VkDescriptorImageInfo{
+				.sampler = ssaoImage->sampler(),
+				.imageView = ssaoImage->imageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			})
+			.pushBufferInfo(5, 1, VkDescriptorBufferInfo{
 				.buffer = compositeSet0UniformBuffer[i]->buffer(),
 				.offset = 0,
 				.range = sizeof(CompositeSet0UBO)
@@ -445,6 +558,30 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 			model.draw(commandBuffer, shadowPipeline->pipelineLayout(), false);
 		}
 		shadowRenderPass->end(commandBuffer);
+
+		ssaoRenderPass->begin(commandBuffer, ssaoFramebuffer->framebuffer(), VkRect2D{
+			.offset = {0, 0},
+			.extent = context->swapChainExtent()
+		}, {
+			clearColor,
+			clearColor,
+			clearDepth
+		});
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		ssaoPipeline->bind(commandBuffer);
+		SsaoSet0UBO ssaoSet0UBO{};
+		ssaoSet0UBO.view = camera.getView();
+		ssaoSet0UBO.projection = camera.getProjection();
+		ssaoSet0UBO.invView = glm::inverse(ssaoSet0UBO.view);
+		ssaoSet0UBO.invProjection = glm::inverse(ssaoSet0UBO.projection);
+		ssaoSet0UBO.radius = 0.5;
+		ssaoSet0UBO.bias = 0.025;
+		std::memcpy(ssaoSet0UniformBufferMap[context->currentFrame()], &ssaoSet0UBO, sizeof(SsaoSet0UBO));
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipelineLayout(), 0, 1, &ssaoSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
+		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+		ssaoRenderPass->end(commandBuffer);
 
 		compositeRenderPass->begin(commandBuffer, compositeFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},

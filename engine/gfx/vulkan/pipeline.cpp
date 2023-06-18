@@ -42,6 +42,7 @@ Pipeline::Builder& Pipeline::Builder::addDynamicState(VkDynamicState state) {
 }
 
 Pipeline::Builder& Pipeline::Builder::addDescriptorSetLayout(std::shared_ptr<DescriptorSetLayout> descriptorSetLayout) {
+    assert(descriptorSetLayout);
     descriptorSetLayouts.push_back(descriptorSetLayout->descriptorSetLayout());
     return *this;
 }

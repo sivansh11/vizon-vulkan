@@ -91,7 +91,7 @@ private:
 
     float m_yaw = 0, m_pitch = 0;
 
-    float m_speed = 3.f;
+    float m_speed = .005f;
     float m_sensitivity = 100;
 
     bool is_first{true};

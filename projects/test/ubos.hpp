@@ -33,4 +33,13 @@ struct CompositeSet0UBO {
     DirectionalLight directionalLight;
 };
 
+struct SsaoSet0UBO {
+    glm::mat4 projection;
+    glm::mat4 invProjection;
+    glm::mat4 view;
+    glm::mat4 invView;
+    alignas(4) float radius;
+    alignas(4) float bias;
+};
+
 #endif

@@ -57,6 +57,16 @@ private:
     std::shared_ptr<gfx::vulkan::Framebuffer> shadowFramebuffer;
     std::shared_ptr<gfx::vulkan::Pipeline> shadowPipeline;
 
+    std::shared_ptr<gfx::vulkan::RenderPass> ssaoRenderPass;
+    std::shared_ptr<gfx::vulkan::DescriptorSetLayout> ssaoDescriptorSetLayout0;
+    std::shared_ptr<gfx::vulkan::Image> ssaoImage;
+    std::shared_ptr<gfx::vulkan::Image> noise;
+    std::shared_ptr<gfx::vulkan::Framebuffer> ssaoFramebuffer;
+    std::shared_ptr<gfx::vulkan::Pipeline> ssaoPipeline;
+    std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> ssaoSet0;
+    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> ssaoSet0UniformBuffer;
+    std::vector<void *> ssaoSet0UniformBufferMap;
+
     std::shared_ptr<gfx::vulkan::RenderPass> compositeRenderPass;
     std::shared_ptr<gfx::vulkan::Image> compositeImage;
     std::shared_ptr<gfx::vulkan::Framebuffer> compositeFramebuffer;

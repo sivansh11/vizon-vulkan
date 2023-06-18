@@ -15,7 +15,8 @@ layout (set = 0, binding = 0) uniform sampler2D texAlbedoSpec;
 layout (set = 0, binding = 1) uniform sampler2D texNormal;
 layout (set = 0, binding = 2) uniform sampler2D texDepth;
 layout (set = 0, binding = 3) uniform sampler2DShadow texShadowMap;
-layout (set = 0, binding = 4) uniform CompositeSet0UBO {
+layout (set = 0, binding = 4) uniform sampler2D texSSAO;
+layout (set = 0, binding = 5) uniform CompositeSet0UBO {
     mat4 lightSpace;
     mat4 view;
     mat4 projection;
@@ -24,16 +25,15 @@ layout (set = 0, binding = 4) uniform CompositeSet0UBO {
     DirectionalLight directionalLight;
 };
 
-
 vec4 getViewPositionFromDepth(vec2 uv, float depth);
 float calculateShadow();
 
 void main() {
     vec3 albedo = texture(texAlbedoSpec, uv).rgb;
-
+    
     float visibility = calculateShadow();
 
-    finalColor = vec4((albedo * visibility) + directionalLight.ambience * albedo, 1);
+    finalColor = vec4((albedo * visibility) + (directionalLight.ambience * albedo * texture(texSSAO, uv).r), 1);
 }
 
 float calculateShadow() {
