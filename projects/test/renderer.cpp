@@ -170,7 +170,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 	ssaoRenderPass = gfx::vulkan::RenderPass::Builder{}
 		.addColorAttachment(VkAttachmentDescription{
-			.format = VK_FORMAT_R16_UNORM,
+			.format = VK_FORMAT_R8_UNORM,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -190,7 +190,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.loadFromPath(context, "../../assets/textures/noise.jpg");
 
 	ssaoImage = gfx::vulkan::Image::Builder{}
-		.build2D(context, width, height, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		.build2D(context, width, height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ssaoFramebuffer = gfx::vulkan::Framebuffer::Builder{}
 		.addAttachmentView(ssaoImage->imageView())
@@ -376,7 +376,7 @@ void Renderer::recreateDimentionDependentResources() {
 		.build(context, deferredRenderPass->renderPass(), width, height);
 
 	ssaoImage = gfx::vulkan::Image::Builder{}
-		.build2D(context, width, height, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		.build2D(context, width, height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ssaoFramebuffer = gfx::vulkan::Framebuffer::Builder{}
 		.addAttachmentView(ssaoImage->imageView())
