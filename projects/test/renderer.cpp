@@ -170,7 +170,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 	ssaoRenderPass = gfx::vulkan::RenderPass::Builder{}
 		.addColorAttachment(VkAttachmentDescription{
-			.format = VK_FORMAT_R16_SFLOAT,
+			.format = VK_FORMAT_R16_UNORM,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -190,7 +190,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.loadFromPath(context, "../../assets/textures/noise.jpg");
 
 	ssaoImage = gfx::vulkan::Image::Builder{}
-		.build2D(context, width, height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		.build2D(context, width, height, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ssaoFramebuffer = gfx::vulkan::Framebuffer::Builder{}
 		.addAttachmentView(ssaoImage->imageView())
@@ -376,7 +376,7 @@ void Renderer::recreateDimentionDependentResources() {
 		.build(context, deferredRenderPass->renderPass(), width, height);
 
 	ssaoImage = gfx::vulkan::Image::Builder{}
-		.build2D(context, width, height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		.build2D(context, width, height, VK_FORMAT_R16_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ssaoFramebuffer = gfx::vulkan::Framebuffer::Builder{}
 		.addAttachmentView(ssaoImage->imageView())
@@ -576,8 +576,8 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		ssaoSet0UBO.projection = camera.getProjection();
 		ssaoSet0UBO.invView = glm::inverse(ssaoSet0UBO.view);
 		ssaoSet0UBO.invProjection = glm::inverse(ssaoSet0UBO.projection);
-		ssaoSet0UBO.radius = 0.5;
-		ssaoSet0UBO.bias = 0.025;
+		ssaoSet0UBO.radius = 0.1;
+		ssaoSet0UBO.bias = 0.05;
 		std::memcpy(ssaoSet0UniformBufferMap[context->currentFrame()], &ssaoSet0UBO, sizeof(SsaoSet0UBO));
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipelineLayout(), 0, 1, &ssaoSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
