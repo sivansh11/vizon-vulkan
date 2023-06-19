@@ -15,6 +15,7 @@ class Pipeline {
 public:
 
     struct Builder {
+        Builder();
         Builder& addShader(const std::filesystem::path& shaderPath);
         Builder& addDynamicState(VkDynamicState state);
 
@@ -22,6 +23,8 @@ public:
 
         Builder& addDefaultColorBlendAttachmentState();
         Builder& addColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState);
+
+        Builder& setDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& pipelineDepthStencilState);
 
         Builder& addVertexInputBindingDescription(uint32_t binding, uint32_t stride, VkVertexInputRate inputRate);
         Builder& addVertexInputAttributeDescription(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);   
@@ -36,6 +39,7 @@ public:
         std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts; 
         std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
+        VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{};
     };
 
     Pipeline(std::shared_ptr<Context> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint);

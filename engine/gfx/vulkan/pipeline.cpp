@@ -31,6 +31,19 @@ static std::vector<char> readFile(const std::filesystem::path& filename) {
 namespace gfx::vulkan {
 
 // Pipeline::Builder& Pipeline::Builder::
+Pipeline::Builder::Builder() {
+    pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+    pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+    pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+    pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+    pipelineDepthStencilStateCreateInfo.minDepthBounds = 0.0f; // Optional
+    pipelineDepthStencilStateCreateInfo.maxDepthBounds = 1.0f; // Optional
+    pipelineDepthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+    pipelineDepthStencilStateCreateInfo.front = {}; // Optional
+    pipelineDepthStencilStateCreateInfo.back = {}; // Optional
+}
+
 Pipeline::Builder& Pipeline::Builder::addShader(const std::filesystem::path& shaderPath) {
     shaderPaths.push_back(shaderPath);
     return *this;
@@ -63,6 +76,11 @@ Pipeline::Builder& Pipeline::Builder::addDefaultColorBlendAttachmentState() {
 
 Pipeline::Builder& Pipeline::Builder::addColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& pipelineColorBlendAttachmenState) {
     pipelineColorBlendAttachmentStates.push_back(pipelineColorBlendAttachmenState);
+    return *this;
+}
+
+Pipeline::Builder& Pipeline::Builder::setDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& pipelineDepthStencilState) {
+    Builder::pipelineDepthStencilStateCreateInfo = pipelineDepthStencilState;
     return *this;
 }
 
@@ -202,18 +220,7 @@ std::shared_ptr<Pipeline> Pipeline::Builder::build(std::shared_ptr<Context> cont
     colorBlending.blendConstants[2] = 0.0f; // Optional
     colorBlending.blendConstants[3] = 0.0f; // Optional
 
-    VkPipelineDepthStencilStateCreateInfo depthStencil{};
-    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_TRUE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.minDepthBounds = 0.0f; // Optional
-    depthStencil.maxDepthBounds = 1.0f; // Optional
-    depthStencil.stencilTestEnable = VK_FALSE;
-    depthStencil.front = {}; // Optional
-    depthStencil.back = {}; // Optional
-
+    VkPipelineDepthStencilStateCreateInfo depthStencil = pipelineDepthStencilStateCreateInfo;
 
     VkPipelineLayout pipelineLayout;
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};

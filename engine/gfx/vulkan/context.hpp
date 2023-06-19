@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <functional>
 
 namespace gfx {
 
@@ -52,6 +53,7 @@ public:
 
     VkCommandBuffer startSingleUseCommandBuffer();
     void endSingleUseCommandBuffer(VkCommandBuffer commandBuffer);
+    void singleUseCommandBuffer(std::function<void(VkCommandBuffer)> fn);
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 

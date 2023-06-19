@@ -255,6 +255,12 @@ void Context::endSingleUseCommandBuffer(VkCommandBuffer commandBuffer) {
     vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
 }
 
+void Context::singleUseCommandBuffer(std::function<void(VkCommandBuffer)> fn) {
+    auto commandBuffer = startSingleUseCommandBuffer();
+    fn(commandBuffer);
+    endSingleUseCommandBuffer(commandBuffer);
+}
+
 uint32_t Context::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{};
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &physicalDeviceMemoryProperties);
@@ -419,7 +425,9 @@ bool Context::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice) {
         swapChainAdequate = !swapChainSupportDetails.formats.empty() && !swapChainSupportDetails.presentModes.empty();
     }
 
-    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    INFO("timestampperiod {}", deviceProperties.limits.timestampPeriod);    
+
+    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.limits.timestampComputeAndGraphics == VK_TRUE && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
 void Context::pickPhysicalDevice() {

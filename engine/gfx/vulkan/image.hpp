@@ -43,6 +43,7 @@ public:
 
     // TODO: remove single time command from transition layout and make it take in a command buffer instead
     void transitionLayout(VkImageLayout newLayout);
+    void transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout);
     void genMipMaps();
 
     static void copyBufferToImage(std::shared_ptr<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
@@ -52,6 +53,8 @@ public:
     VkSampler& sampler() { return m_imageInfo.sampler; }
     VkFormat& format() { return m_imageInfo.format; }
     VkImageLayout& imageLayout() { return m_imageInfo.currentLayout; }
+
+    friend class RenderPass;
 
 private:
     std::shared_ptr<Context> m_context{};

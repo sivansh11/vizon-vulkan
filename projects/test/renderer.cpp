@@ -16,6 +16,56 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 	auto [width, height] = window->getSize();
 
+	depthDescriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
+		.build(context);
+	
+	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
+		depthDescriptorSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
+			.build(context, depthDescriptorSetLayout0));
+		depthSet0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+			.build(context, sizeof(DepthSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+		depthSet0UniformBufferMap.push_back(depthSet0UniformBuffer[i]->map());
+
+		depthDescriptorSet0[i]->write()
+			.pushBufferInfo(0, 1, VkDescriptorBufferInfo{
+				.buffer = depthSet0UniformBuffer[i]->buffer(),
+				.offset = 0,
+				.range = sizeof(DepthSet0UBO)
+			})
+			.update();
+	}
+
+	depthRenderPass = gfx::vulkan::RenderPass::Builder{}
+		.setDepthAttachment(VkAttachmentDescription{
+			.format = VK_FORMAT_D32_SFLOAT,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
+		})
+		.build(context);
+	
+	depthImage = gfx::vulkan::Image::Builder{}
+		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	depthFramebuffer = gfx::vulkan::Framebuffer::Builder{}
+		.addAttachmentView(depthImage->imageView())
+		.build(context, depthRenderPass->renderPass(), width, height);
+	
+	depthPipeline = gfx::vulkan::Pipeline::Builder{}
+		.addShader("../../assets/shaders/depth/base.vert.spv")
+		.addShader("../../assets/shaders/depth/base.frag.spv")
+		.addDescriptorSetLayout(depthDescriptorSetLayout0)
+		.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+		.addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+		.addVertexInputBindingDescription(0, sizeof(core::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
+		.addVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, position))
+		.build(context, depthRenderPass->renderPass());
+
+	depthTimer = std::make_shared<gfx::vulkan::Timer>(context);
+	
 	descriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build(context);
@@ -79,9 +129,9 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.setDepthAttachment(VkAttachmentDescription{
             .format = VK_FORMAT_D32_SFLOAT,
             .samples = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
         })
 		.build(context);
@@ -94,6 +144,30 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addDescriptorSetLayout(core::Material::getMaterialDescriptorSetLayout())
 		.addDefaultColorBlendAttachmentState()
 		.addDefaultColorBlendAttachmentState()
+		.setDepthStencilState(VkPipelineDepthStencilStateCreateInfo{
+			// sType
+			// pNext
+			// flags
+			// depthTestEnable
+			// depthWriteEnable
+			// depthCompareOp
+			// depthBoundsTestEnable
+			// stencilTestEnable
+			// front
+			// back
+			// minDepthBounds
+			// maxDepthBounds
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+			.depthTestEnable = VK_TRUE,
+			.depthWriteEnable = VK_TRUE,
+			.depthCompareOp = VK_COMPARE_OP_EQUAL,
+			.depthBoundsTestEnable = VK_FALSE,
+			.stencilTestEnable = VK_FALSE,
+			.front = {},
+			.back = {},
+			.minDepthBounds = 0,
+			.maxDepthBounds = 1,
+		})
 		.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 		.addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 		.addVertexInputBindingDescription(0, sizeof(core::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
@@ -110,14 +184,16 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 	gBufferNormalImage = gfx::vulkan::Image::Builder{}
 		.build2D(context, width, height, VK_FORMAT_R16G16B16A16_SNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	
-	gBufferDepthImage = gfx::vulkan::Image::Builder{}
-		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	// gBufferDepthImage = gfx::vulkan::Image::Builder{}
+	// 	.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	gBufferFramebuffer = gfx::vulkan::Framebuffer::Builder{}
 		.addAttachmentView(gBufferAlbedoSpecImage->imageView())
 		.addAttachmentView(gBufferNormalImage->imageView())
-		.addAttachmentView(gBufferDepthImage->imageView())
+		.addAttachmentView(depthImage->imageView())
 		.build(context, deferredRenderPass->renderPass(), width, height);
+
+	deferredTimer = std::make_shared<gfx::vulkan::Timer>(context);
 
 	shadowDescriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
@@ -168,6 +244,8 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, position))
 		.build(context, shadowRenderPass->renderPass());
 
+	shadowTimer = std::make_shared<gfx::vulkan::Timer>(context);
+
 	ssaoRenderPass = gfx::vulkan::RenderPass::Builder{}
 		.addColorAttachment(VkAttachmentDescription{
 			.format = VK_FORMAT_R8_UNORM,
@@ -185,6 +263,8 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build(context);
+	
+	ssaoTimer = std::make_shared<gfx::vulkan::Timer>(context);
 
 	noise = gfx::vulkan::Image::Builder{}
 		.loadFromPath(context, "../../assets/textures/noise.jpg");
@@ -216,8 +296,9 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 		ssaoSet0[i]->write()
 			.pushImageInfo(0, 1, VkDescriptorImageInfo{
-				.sampler = gBufferDepthImage->sampler(),
-				.imageView = gBufferDepthImage->imageView(),
+				// .sampler = gBufferDepthImage->sampler(),
+				.sampler = depthImage->sampler(),
+				.imageView = depthImage->imageView(),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(1, 1, VkDescriptorImageInfo{
@@ -286,8 +367,9 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(2, 1, VkDescriptorImageInfo{
-				.sampler = gBufferDepthImage->sampler(),
-				.imageView = gBufferDepthImage->imageView(),
+				// .sampler = gBufferDepthImage->sampler(),
+				.sampler = depthImage->sampler(),
+				.imageView = depthImage->imageView(),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(3, 1, VkDescriptorImageInfo{
@@ -317,6 +399,8 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 		.build(context, compositeRenderPass->renderPass());
 
+	compositeTimer = std::make_shared<gfx::vulkan::Timer>(context);
+
 	swapChainPipelineDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build(context);
@@ -340,12 +424,15 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
 		.build(context, context->swapChainRenderPass());	
 	
+	swapChainTimer = std::make_shared<gfx::vulkan::Timer>(context);
+
     INFO("Created Renderer");
 }
 
 Renderer::~Renderer() {
 	
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
+		depthSet0UniformBuffer[i]->unmap();
 		set0UniformBuffer[i]->unmap();
 		set1UniformBuffer[i]->unmap();
 		shadowSet0UniformBuffer[i]->unmap();
@@ -360,19 +447,27 @@ void Renderer::recreateDimentionDependentResources() {
 
 	auto [width, height] = window->getSize();
 
+	depthImage = gfx::vulkan::Image::Builder{}
+		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	depthFramebuffer = gfx::vulkan::Framebuffer::Builder{}
+		.addAttachmentView(depthImage->imageView())
+		.build(context, depthRenderPass->renderPass(), width, height);
+
 	gBufferAlbedoSpecImage = gfx::vulkan::Image::Builder{}
 		.build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	
 	gBufferNormalImage = gfx::vulkan::Image::Builder{}
 		.build2D(context, width, height, VK_FORMAT_R16G16B16A16_SNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	
-	gBufferDepthImage = gfx::vulkan::Image::Builder{}
-		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	// gBufferDepthImage = gfx::vulkan::Image::Builder{}
+	// 	.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	gBufferFramebuffer = gfx::vulkan::Framebuffer::Builder{}
 		.addAttachmentView(gBufferAlbedoSpecImage->imageView())
 		.addAttachmentView(gBufferNormalImage->imageView())
-		.addAttachmentView(gBufferDepthImage->imageView())
+		// .addAttachmentView(gBufferDepthImage->imageView())
+		.addAttachmentView(depthImage->imageView())
 		.build(context, deferredRenderPass->renderPass(), width, height);
 
 	ssaoImage = gfx::vulkan::Image::Builder{}
@@ -385,8 +480,9 @@ void Renderer::recreateDimentionDependentResources() {
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
 		ssaoSet0[i]->write()
 			.pushImageInfo(0, 1, VkDescriptorImageInfo{
-				.sampler = gBufferDepthImage->sampler(),
-				.imageView = gBufferDepthImage->imageView(),
+				// .sampler = gBufferDepthImage->sampler(),
+				.sampler = depthImage->sampler(),
+				.imageView = depthImage->imageView(),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(1, 1, VkDescriptorImageInfo{
@@ -427,8 +523,9 @@ void Renderer::recreateDimentionDependentResources() {
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(2, 1, VkDescriptorImageInfo{
-				.sampler = gBufferDepthImage->sampler(),
-				.imageView = gBufferDepthImage->imageView(),
+				// .sampler = gBufferDepthImage->sampler(),
+				.sampler = depthImage->sampler(),
+				.imageView = depthImage->imageView(),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(3, 1, VkDescriptorImageInfo{
@@ -467,15 +564,13 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		VkClearValue clearDepth{};
 		clearDepth.depthStencil.depth = 1;
 		
-		deferredRenderPass->begin(commandBuffer, gBufferFramebuffer->framebuffer(), VkRect2D{
+		depthTimer->begin(commandBuffer);
+		depthRenderPass->begin(commandBuffer, depthFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
 			.extent = context->swapChainExtent()
 		}, {
-			clearColor,
-			clearColor,
 			clearDepth
 		});
-
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -488,6 +583,35 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		scissor.offset = {0, 0};
 		scissor.extent = context->swapChainExtent();
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		depthPipeline->bind(commandBuffer);
+		core::Transform transform{};
+		DepthSet0UBO depthSet0UBO{};
+		depthSet0UBO.model = transform.mat4();
+		depthSet0UBO.projection = camera.getProjection();
+		depthSet0UBO.view = camera.getView();
+		std::memcpy(depthSet0UniformBufferMap[context->currentFrame()], &depthSet0UBO, sizeof(DepthSet0UBO));
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, depthPipeline->pipelineLayout(), 0, 1, &depthDescriptorSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
+
+		for (auto [ent, model] : scene->view<core::Model>().each()) {
+			model.draw(commandBuffer, depthPipeline->pipelineLayout(), false);
+		}
+		depthTimer->end(commandBuffer);
+		if (auto t = depthTimer->getTime()) {
+			INFO("Depth Timer: {}", *t);
+		}
+		depthRenderPass->end(commandBuffer);
+
+		deferredTimer->begin(commandBuffer);
+		deferredRenderPass->begin(commandBuffer, gBufferFramebuffer->framebuffer(), VkRect2D{
+			.offset = {0, 0},
+			.extent = context->swapChainExtent()
+		}, {
+			clearColor,
+			clearColor,
+			clearDepth
+		});
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);	
 		deferredPipeline->bind(commandBuffer);
 		
 		Set0UBO set0UBO{};
@@ -495,7 +619,6 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		set0UBO.view = camera.getView();
 		
 		Set1UBO set1UBO{};
-		core::Transform transform{};
 		set1UBO.model = transform.mat4();
 		set1UBO.invModelT = glm::transpose(glm::inverse(glm::mat3{set1UBO.model}));
 
@@ -508,8 +631,13 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		for (auto [ent, model] : scene->view<core::Model>().each()) {
 			model.draw(commandBuffer, deferredPipeline->pipelineLayout());
 		}
+		deferredTimer->end(commandBuffer);
+		if (auto t = deferredTimer->getTime()) {
+			INFO("Deferred Timer: {}", *t);
+		}
 		deferredRenderPass->end(commandBuffer);
 
+		shadowTimer->begin(commandBuffer);
 		shadowRenderPass->begin(commandBuffer, shadowFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
 			.extent = {1024, 1024}
@@ -557,8 +685,13 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		for (auto [ent, model] : scene->view<core::Model>().each()) {
 			model.draw(commandBuffer, shadowPipeline->pipelineLayout(), false);
 		}
+		shadowTimer->end(commandBuffer);
+		if (auto t = shadowTimer->getTime()) {
+			INFO("Shadow Timer: {}", *t);
+		}
 		shadowRenderPass->end(commandBuffer);
 
+		ssaoTimer->begin(commandBuffer);
 		ssaoRenderPass->begin(commandBuffer, ssaoFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
 			.extent = context->swapChainExtent()
@@ -581,8 +714,13 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		std::memcpy(ssaoSet0UniformBufferMap[context->currentFrame()], &ssaoSet0UBO, sizeof(SsaoSet0UBO));
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipelineLayout(), 0, 1, &ssaoSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+		ssaoTimer->end(commandBuffer);
+		if (auto t = ssaoTimer->getTime()) {
+			INFO("SSAO Timer: {}", *t);
+		}
 		ssaoRenderPass->end(commandBuffer);
 
+		compositeTimer->begin(commandBuffer);
 		compositeRenderPass->begin(commandBuffer, compositeFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
 			.extent = context->swapChainExtent()
@@ -607,14 +745,23 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		std::memcpy(compositeSet0UniformBufferMap[context->currentFrame()], &compositeSet0UBO, sizeof(CompositeSet0UBO));
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, compositePipeline->pipelineLayout(), 0, 1, &compositeSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+		compositeTimer->end(commandBuffer);
+		if (auto t = compositeTimer->getTime()) {
+			INFO("Composite Timer: {}", *t);
+		}
 		compositeRenderPass->end(commandBuffer);
 
+		swapChainTimer->begin(commandBuffer);
 		context->beginSwapChainRenderPass(commandBuffer, clearColor);
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapChainPipeline->pipelineLayout(), 0, 1, &swapChainPipelineDescriptorSet->descriptorSet(), 0, nullptr);
 		swapChainPipeline->bind(commandBuffer);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+		swapChainTimer->end(commandBuffer);
+		if (auto t = swapChainTimer->getTime()) {
+			INFO("SwapChain Timer: {}", *t);
+		}
 		context->endSwapChainRenderPass(commandBuffer);
 
 		if (context->endFrame(commandBuffer))

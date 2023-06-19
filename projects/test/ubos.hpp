@@ -3,6 +3,12 @@
 
 #include <glm/glm.hpp>
 
+struct DepthSet0UBO {
+    glm::mat4 projection;
+    glm::mat4 view;
+    glm::mat4 model;
+};
+
 struct Set0UBO {
     glm::mat4 projection;
     glm::mat4 view;

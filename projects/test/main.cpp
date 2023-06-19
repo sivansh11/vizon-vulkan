@@ -62,7 +62,9 @@ int main(int argc, char **argv) {
         lastTime = currentTime;
 
         auto ms = dt.count() / float(1e6);
-        std::cout << dt.count() / 1e6 << ' ' << 1000.f / ms << '\n';
+        
+        INFO("Took {}ms, FPS is {}", dt.count() / 1e6, 1000.f / ms);
+        INFO("-------------------------------------------------");
 
         editorCamera.onUpdate(dt.count() / 1e6);
 

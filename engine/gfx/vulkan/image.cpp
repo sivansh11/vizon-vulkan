@@ -203,6 +203,12 @@ Image::~Image() {
 void Image::transitionLayout(VkImageLayout newLayout) {
     auto commandBuffer = m_context->startSingleUseCommandBuffer();
 
+    transitionLayout(commandBuffer, newLayout);
+    
+    m_context->endSingleUseCommandBuffer(commandBuffer);
+}
+
+void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout) {
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageMemoryBarrier.oldLayout = m_imageInfo.currentLayout;
@@ -318,8 +324,6 @@ void Image::transitionLayout(VkImageLayout newLayout) {
     imageMemoryBarrier.dstAccessMask = 0;
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
-    m_context->endSingleUseCommandBuffer(commandBuffer);
 
     m_imageInfo.currentLayout = newLayout;
 }
