@@ -12,8 +12,8 @@ struct Material {
     std::shared_ptr<gfx::vulkan::DescriptorSet> descriptorSet;
 
     std::shared_ptr<gfx::vulkan::Image> diffuse;
-    std::shared_ptr<gfx::vulkan::Image> specular;
-    std::shared_ptr<gfx::vulkan::Image> normal;
+    // std::shared_ptr<gfx::vulkan::Image> specular;
+    // std::shared_ptr<gfx::vulkan::Image> normal;
 
     void update();
 

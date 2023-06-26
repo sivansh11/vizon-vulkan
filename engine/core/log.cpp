@@ -34,8 +34,8 @@ bool Log::init() {
     if (m_logger) {
         ok = true;
         spdlog::register_logger(m_logger);
-        m_logger->set_level(spdlog::level::info);
-        m_logger->flush_on(spdlog::level::info);
+        m_logger->set_level(spdlog::level::trace);
+        m_logger->flush_on(spdlog::level::trace);
     }
 
     return ok;

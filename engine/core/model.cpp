@@ -103,8 +103,8 @@ std::shared_ptr<Material> Model::processMaterial(aiMaterial *material) {
     
     // load all the textures and parameters
     mat->diffuse = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
-    mat->specular = loadMaterialTexture(material, aiTextureType_SPECULAR, "diffuse");
-    mat->normal = loadMaterialTexture(material, aiTextureType_NORMALS, "diffuse");
+    // mat->specular = loadMaterialTexture(material, aiTextureType_SPECULAR, "diffuse");
+    // mat->normal = loadMaterialTexture(material, aiTextureType_NORMALS, "diffuse");
 
     mat->update();
 
@@ -124,7 +124,7 @@ std::shared_ptr<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, 
         std::memcpy(map, data, sizeof(uint8_t) * 4);
         stagingBuffer->unmap();
 
-        img->transitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        img->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         gfx::vulkan::Image::copyBufferToImage(m_context, *stagingBuffer, *img, VkBufferImageCopy{
             .bufferOffset = 0,
             .bufferRowLength = 0,
@@ -139,7 +139,7 @@ std::shared_ptr<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, 
             .imageExtent = {static_cast<uint32_t>(1), static_cast<uint32_t>(1), 1}
         });
 
-        img->transitionLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        img->transitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         return img;
     }
     if (mat->GetTextureCount(type) == 0) return nullptr;

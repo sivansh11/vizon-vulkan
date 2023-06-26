@@ -557,7 +557,7 @@ void Renderer::recreateDimentionDependentResources() {
 
 void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraComponent& camera) {
 	if (auto startFrame = context->startFrame()) {
-		auto [commandBuffer, imageIndex] = *startFrame;
+		auto [commandBuffer, currentFrame] = *startFrame;
 
 		VkClearValue clearColor{};
 		clearColor.color = {0, 0, 0, 0};

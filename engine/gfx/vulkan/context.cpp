@@ -153,7 +153,7 @@ std::optional<std::pair<VkCommandBuffer, uint32_t>> Context::startFrame() {
         ERROR("Failed to being command buffer");
         std::terminate();
     }
-    return std::pair<VkCommandBuffer, uint32_t>{ m_commandBuffers[m_currentFrame], m_imageIndex };
+    return std::pair<VkCommandBuffer, uint32_t>{ m_commandBuffers[m_currentFrame], m_currentFrame };
 }
 
 bool Context::endFrame(VkCommandBuffer commandBuffer) {
@@ -427,7 +427,7 @@ bool Context::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice) {
 
     INFO("timestampperiod {}", deviceProperties.limits.timestampPeriod);    
 
-    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.limits.timestampComputeAndGraphics == VK_TRUE && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.limits.timestampComputeAndGraphics == VK_TRUE && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
 }
 
 void Context::pickPhysicalDevice() {

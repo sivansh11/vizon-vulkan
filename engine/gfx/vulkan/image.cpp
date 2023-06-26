@@ -15,10 +15,38 @@ Image::Builder& Image::Builder::mipMaps() {
     return *this;
 }
 
+Image::Builder& Image::Builder::setTiling(VkImageTiling imageTiling) {
+    Builder::imageTiling = imageTiling;
+    return *this;
+}
+
+Image::Builder& Image::Builder::setInitialLayout(VkImageLayout initialLayout) {
+    Builder::initialLayout = initialLayout;
+    return *this;
+}
+
 Image::Builder& Image::Builder::setCompareOp(VkCompareOp compareOp) {
     enableCompareOp = true;
     Builder::compareOp = compareOp;
     return *this;
+}
+
+uint32_t numChannels(VkFormat format) {
+    static std::set<VkFormat> formatsWith4Channels{
+        VK_FORMAT_R8G8B8A8_SINT,
+        VK_FORMAT_R8G8B8A8_SNORM,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_FORMAT_R8G8B8A8_SSCALED,
+        VK_FORMAT_R8G8B8A8_UINT,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_R8G8B8A8_USCALED
+    };
+
+    if (formatsWith4Channels.contains(format)) return 4;
+    if (format == VK_FORMAT_D32_SFLOAT) return 4;
+    ERROR("Failed to guess number of channels for format");
+    // std::terminate();
+    return 0;
 }
 
 std::shared_ptr<Image> Image::Builder::build2D(std::shared_ptr<Context> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
@@ -34,8 +62,8 @@ std::shared_ptr<Image> Image::Builder::build2D(std::shared_ptr<Context> context,
         imageCreateInfo.mipLevels = 1;  
     imageCreateInfo.arrayLayers = 1; // ???
     imageCreateInfo.format = format;
-    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.tiling = imageTiling;
+    imageCreateInfo.initialLayout = initialLayout;
     imageCreateInfo.usage = imageUsageFlags;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;  // TODO: add multisampling support ???
@@ -120,6 +148,8 @@ std::shared_ptr<Image> Image::Builder::build2D(std::shared_ptr<Context> context,
     imageInfo.mipLevels = imageCreateInfo.mipLevels;
     imageInfo.width = width;
     imageInfo.height = height;
+    imageInfo.size = width * height * numChannels(format);
+    
     return std::make_shared<Image>(context, imageInfo);
 }
 
@@ -147,7 +177,7 @@ std::shared_ptr<Image> Image::Builder::loadFromPath(std::shared_ptr<Context> con
     
     mipMaps();
     auto image = build2D(context, width, height, format, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    image->transitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    image->transitionLayout(initialLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     Image::copyBufferToImage(context, *stagingBuffer, *image, VkBufferImageCopy{
         .bufferOffset = 0,
         .bufferRowLength = 0,
@@ -161,8 +191,7 @@ std::shared_ptr<Image> Image::Builder::loadFromPath(std::shared_ptr<Context> con
         .imageOffset = {0, 0, 0},
         .imageExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1}
         });
-    image->genMipMaps();
-
+    image->genMipMaps(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 
     return image;
@@ -200,18 +229,18 @@ Image::~Image() {
     TRACE("Destroyed image");
 }
 
-void Image::transitionLayout(VkImageLayout newLayout) {
+void Image::transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
     auto commandBuffer = m_context->startSingleUseCommandBuffer();
 
-    transitionLayout(commandBuffer, newLayout);
+    transitionLayout(commandBuffer, oldLayout, newLayout);
     
     m_context->endSingleUseCommandBuffer(commandBuffer);
 }
 
-void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout) {
+void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    imageMemoryBarrier.oldLayout = m_imageInfo.currentLayout;
+    imageMemoryBarrier.oldLayout = oldLayout;
     imageMemoryBarrier.newLayout = newLayout;
 
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;  // not transfering image ownership
@@ -229,7 +258,7 @@ void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLay
     VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
-    switch (m_imageInfo.currentLayout) {
+    switch (oldLayout) {
         case VK_IMAGE_LAYOUT_UNDEFINED:
             // Image layout is undefined (or does not matter)
             // Only valid as initial layout
@@ -313,6 +342,12 @@ void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLay
             }
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
             break;
+        
+        case VK_IMAGE_LAYOUT_GENERAL:
+            imageMemoryBarrier.srcAccessMask = 0;
+            imageMemoryBarrier.dstAccessMask = 0;
+            break;
+
         default:
             // Other source layouts aren't handled (yet)
             ERROR("not handled transition");
@@ -320,17 +355,10 @@ void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout newLay
             break;
     };
 
-    imageMemoryBarrier.srcAccessMask = 0;
-    imageMemoryBarrier.dstAccessMask = 0;
-
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
-    m_imageInfo.currentLayout = newLayout;
 }
 
-void Image::genMipMaps() {
-    auto commandBuffer = m_context->startSingleUseCommandBuffer();
-
+void Image::genMipMaps(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageMemoryBarrier.srcAccessMask = 0;
@@ -351,8 +379,8 @@ void Image::genMipMaps() {
 
     for (uint32_t i = 1; i < m_imageInfo.mipLevels; i++) {
         imageMemoryBarrier.subresourceRange.baseMipLevel = i - 1;
-        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imageMemoryBarrier.oldLayout = oldLayout;
+        imageMemoryBarrier.newLayout = oldLayout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
         imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
@@ -376,10 +404,10 @@ void Image::genMipMaps() {
         imageBlit.dstOffsets[1] = {0, 0, 0};
         imageBlit.dstOffsets[1] = {mipWidth > 1 ? static_cast<int32_t>(mipWidth / 2) : 1, mipHeight > 1 ? static_cast<int32_t>(mipHeight / 2) : 1, 1};
 
-        vkCmdBlitImage(commandBuffer, m_imageInfo.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_imageInfo.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+        vkCmdBlitImage(commandBuffer, m_imageInfo.image, oldLayout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, m_imageInfo.image, newLayout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, 1, &imageBlit, VK_FILTER_LINEAR);
         
-        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageMemoryBarrier.oldLayout = newLayout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+        imageMemoryBarrier.newLayout = newLayout;
         imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
@@ -390,22 +418,58 @@ void Image::genMipMaps() {
     }
 
     imageMemoryBarrier.subresourceRange.baseMipLevel = m_imageInfo.mipLevels - 1;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageMemoryBarrier.oldLayout = oldLayout;
+    imageMemoryBarrier.newLayout = newLayout;
     imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+}
 
+void Image::genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout) {
+    auto commandBuffer = m_context->startSingleUseCommandBuffer();
+    genMipMaps(commandBuffer, oldLayout, newLayout);
     m_context->endSingleUseCommandBuffer(commandBuffer);
 }
 
 void Image::copyBufferToImage(std::shared_ptr<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
     auto commandBuffer = context->startSingleUseCommandBuffer();
 
-    vkCmdCopyBufferToImage(commandBuffer, buffer.buffer(), image.image(), image.m_imageInfo.currentLayout, 1, &bufferImageCopy);
+    copyBufferToImage(commandBuffer, buffer, image, bufferImageCopy);
 
     context->endSingleUseCommandBuffer(commandBuffer);
+}
+
+void Image::copyBufferToImage(VkCommandBuffer commandBuffer, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
+    vkCmdCopyBufferToImage(commandBuffer, buffer.buffer(), image.image(), image.m_imageInfo.currentLayout, 1, &bufferImageCopy);
+}
+
+void Image::invalidate(VkDeviceSize offset, VkDeviceSize size) {
+    VkMappedMemoryRange mappedMemoryRange{};
+    mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedMemoryRange.memory = m_imageInfo.deviceMemory;
+    mappedMemoryRange.offset = offset;
+    mappedMemoryRange.size = size;
+    vkInvalidateMappedMemoryRanges(m_context->device(), 1, &mappedMemoryRange);
+}
+
+void Image::flush(VkDeviceSize offset, VkDeviceSize size) {
+    VkMappedMemoryRange mappedMemoryRange{};
+    mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedMemoryRange.memory = m_imageInfo.deviceMemory;
+    mappedMemoryRange.offset = offset;
+    mappedMemoryRange.size = size;
+    vkFlushMappedMemoryRanges(m_context->device(), 1, &mappedMemoryRange);
+}
+
+void *Image::map(VkDeviceSize offset, VkDeviceSize size) {
+    void *data;
+    vkMapMemory(m_context->device(), m_imageInfo.deviceMemory, offset, size, 0, &data);
+    return data;
+}
+
+void Image::unmap() {
+    vkUnmapMemory(m_context->device(), m_imageInfo.deviceMemory);
 }
 
 } // namespace vulkan

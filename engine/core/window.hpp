@@ -1,6 +1,9 @@
 #ifndef CORE_WINDOW_HPP
 #define CORE_WINDOW_HPP
 
+#define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_NONE
+#define VK_NO_PROTOTYPES
 #include <GLFW/glfw3.h>
 
 #include <string>

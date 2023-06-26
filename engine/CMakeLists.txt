@@ -30,8 +30,9 @@ target_link_libraries(engine
     volk
     EnTT
     assimp
+    screen_capture_lite_static
     ${X11_LIBRARIES}
     ${X11_Xfixes_LIB}
-    ${X11_XTest_LIB}
+    # ${X11_XTest_LIB}
     ${X11_Xinerama_LIB}
 )

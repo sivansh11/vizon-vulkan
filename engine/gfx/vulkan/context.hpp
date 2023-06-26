@@ -2,6 +2,7 @@
 #define GFX_VULKAN_CONTEXT_HPP
 
 #define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_NONE
 #define VK_NO_PROTOTYPES
 #include <GLFW/glfw3.h>
 

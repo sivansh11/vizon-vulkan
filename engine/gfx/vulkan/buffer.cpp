@@ -51,13 +51,32 @@ Buffer::~Buffer() {
     TRACE("Destoryed buffer");
 }
 
+void Buffer::invalidate(VkDeviceSize offset, VkDeviceSize size) {
+    VkMappedMemoryRange mappedMemoryRange{};
+    mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedMemoryRange.memory = m_deviceMemory;
+    mappedMemoryRange.offset = offset;
+    mappedMemoryRange.size = size;
+    vkInvalidateMappedMemoryRanges(m_context->device(), 1, &mappedMemoryRange);
+}
+
+void Buffer::flush(VkDeviceSize offset, VkDeviceSize size) {
+    VkMappedMemoryRange mappedMemoryRange{};
+    mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedMemoryRange.memory = m_deviceMemory;
+    mappedMemoryRange.offset = offset;
+    mappedMemoryRange.size = size;
+    vkFlushMappedMemoryRanges(m_context->device(), 1, &mappedMemoryRange);
+}
+
 void *Buffer::map(VkDeviceSize offset, VkDeviceSize size) {
-    void *data;
-    vkMapMemory(m_context->device(), m_deviceMemory, offset, size, 0, &data);
-    return data;
+    if (m_mapped) return m_mapped;
+    vkMapMemory(m_context->device(), m_deviceMemory, offset, size, 0, &m_mapped);
+    return m_mapped;
 }
 
 void Buffer::unmap() {
+    if (!m_mapped) return;
     vkUnmapMemory(m_context->device(), m_deviceMemory);
 }
 
