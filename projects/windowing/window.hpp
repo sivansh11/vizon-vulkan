@@ -21,7 +21,7 @@ public:
 
 private:
     std::shared_ptr<gfx::vulkan::Context> m_context;
-    std::vector<SL::Screen_Capture::Window> selectedWindow;
+    std::vector<SL::Screen_Capture::Window> selectedWindow{};
     std::atomic<bool> m_imgBufferChanged = false;
     std::shared_ptr<SL::Screen_Capture::IScreenCaptureManager> m_framegrabber;
     std::shared_ptr<gfx::vulkan::Image> m_image;

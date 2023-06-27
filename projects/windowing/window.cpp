@@ -1,5 +1,7 @@
 #include "window.hpp"
 
+#include "core/log.hpp"
+
 static void ExtractAndConvertToRGBA(const SL::Screen_Capture::Image &img, unsigned char *dst, size_t dst_size) {
     assert(dst_size >= static_cast<size_t>(SL::Screen_Capture::Width(img) * SL::Screen_Capture::Height(img) * sizeof(SL::Screen_Capture::ImageBGRA)));
     auto imgsrc = StartSrc(img);
@@ -29,7 +31,10 @@ Window::Window(std::shared_ptr<gfx::vulkan::Context> context, const std::string&
         } 
     }
 
-	assert(selectedWindow.size() > 0);
+	if (selectedWindow.size() == 0) {
+		ERROR("No window with name {} found active, please open it in the background", name);
+		std::terminate();
+	}
 
     m_image = gfx::vulkan::Image::Builder{}
 		.mipMaps()

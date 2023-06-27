@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
                 3, 4, 5
             };
             auto mesh = scene.emplace<std::shared_ptr<core::Mesh>>(ent) = std::make_shared<core::Mesh>(context, vertices, indices);
-            auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = std::make_shared<Window>(context, "code");
+            auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = std::make_shared<Window>(context, "chrome");
             auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = std::make_shared<core::Material>();
             mat->diffuse = wind->image();
             mesh->material = mat;
