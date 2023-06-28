@@ -31,7 +31,6 @@ int main(int argc, char **argv) {
     auto window = std::make_shared<core::Window>("VIZON-vulkan", 800, 600);
     auto context = std::make_shared<gfx::vulkan::Context>(window, 2, true);
     auto dispatcher = std::make_shared<event::Dispatcher>();
-    auto [width, height] = window->getSize();
     core::Material::init(context);
 
     entt::registry scene;
@@ -75,13 +74,14 @@ int main(int argc, char **argv) {
         .addVertexInputBindingDescription(0, sizeof(core::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
 		.addVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, position))
 		.addVertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, normal))
-		.addVertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(core::Vertex, uv))
+		.addVertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT,    offsetof(core::Vertex, uv))
 		.addVertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, tangent))
 		.addVertexInputAttributeDescription(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, biTangent))
         .addShader("../../projects/windowing/shaders/diffuse_only/base.vert.spv")
         .addShader("../../projects/windowing/shaders/diffuse_only/base.frag.spv")
         .build(context, renderpass->renderPass());
 
+    auto [width, height] = window->getSize();
     auto imageColor = gfx::vulkan::Image::Builder{} 
         .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -95,8 +95,6 @@ int main(int argc, char **argv) {
     
     std::vector<std::shared_ptr<gfx::vulkan::Buffer>> globalUniformBufferObject;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> globalUniformBufferDescriptorSet;
-    // std::vector<std::shared_ptr<gfx::vulkan::Buffer>> perObjectUniformBufferObject;
-    // std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> perObjectUniformBufferDescriptorSet;
     for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
         globalUniformBufferDescriptorSet.push_back(gfx::vulkan::DescriptorSet::Builder{}
             .build(context, globalDescriptorSetLayout));
@@ -105,14 +103,6 @@ int main(int argc, char **argv) {
         globalUniformBufferDescriptorSet[i]->write()
             .pushBufferInfo(0, 1, globalUniformBufferObject[i]->descriptorInfo())
             .update();
-
-        // perObjectUniformBufferDescriptorSet.push_back(gfx::vulkan::DescriptorSet::Builder{}
-        //     .build(context, perObjectDescriptorSetLayout));
-        // perObjectUniformBufferObject.push_back(gfx::vulkan::Buffer::Builder{}
-        //     .build(context, sizeof(PerObjectUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-        // perObjectUniformBufferDescriptorSet[i]->write()
-        //     .pushBufferInfo(0, 1, perObjectUniformBufferObject[i]->descriptorInfo())
-        //     .update();
     }
 
     auto swapChain_descriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
@@ -135,52 +125,67 @@ int main(int argc, char **argv) {
         .pushImageInfo(0, 1, imageColor->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
         .update();
 
-        {
-            auto ent = scene.create();
-            auto& t = scene.emplace<core::Transform>(ent);
-            t.rotation = {0, glm::half_pi<float>(), 0};
-            t.translation = {3, 0, 0};
-            t.scale = {-1, -1, 1};
-            std::vector<core::Vertex> vertices{
-                core::Vertex{{-1.0, -0.5, 0}, {}, {0, 0}},
-                core::Vertex{{-1.0,  0.5, 0}, {}, {0, 1}},
-                core::Vertex{{ 1.0,  0.5, 0}, {}, {1, 1}},
+    // setting up the textured quad entity, atm this is very messy, should be made better/cleaner
+    {
+        auto ent = scene.create();
+        auto& t = scene.emplace<core::Transform>(ent);
+        t.rotation = {0, glm::half_pi<float>(), 0};
+        t.translation = {3, 0, 0};
+        t.scale = {-1, -1, 1};
+        std::vector<core::Vertex> vertices{
+            core::Vertex{{-1.0, -0.5, 0}, {}, {0, 0}},
+            core::Vertex{{-1.0,  0.5, 0}, {}, {0, 1}},
+            core::Vertex{{ 1.0,  0.5, 0}, {}, {1, 1}},
 
-                core::Vertex{{-1.0, -0.5, 0}, {}, {0, 0}},
-                core::Vertex{{ 1.0,  0.5, 0}, {}, {1, 1}},
-                core::Vertex{{ 1.0, -0.5, 0}, {}, {1, 0}},
-            };  
-
-            std::vector<uint32_t> indices {
-                0, 1, 2,
-                3, 4, 5
-            };
-            auto mesh = scene.emplace<std::shared_ptr<core::Mesh>>(ent) = std::make_shared<core::Mesh>(context, vertices, indices);
-            auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = std::make_shared<Window>(context, "chrome");
-            auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = std::make_shared<core::Material>();
-            mat->diffuse = wind->image();
-            mesh->material = mat;
-            mat->descriptorSet = gfx::vulkan::DescriptorSet::Builder{}
-                .build(context, core::Material::getMaterialDescriptorSetLayout());
-            // mat->update();
-            mat->descriptorSet->write()
-                .pushImageInfo(0, 1, mat->diffuse->descriptorInfo(VK_IMAGE_LAYOUT_GENERAL))
+            core::Vertex{{-1.0, -0.5, 0}, {}, {0, 0}},
+            core::Vertex{{ 1.0,  0.5, 0}, {}, {1, 1}},
+            core::Vertex{{ 1.0, -0.5, 0}, {}, {1, 0}},
+        };  
+        std::vector<uint32_t> indices {
+            0, 1, 2,
+            3, 4, 5
+        };
+        auto mesh = scene.emplace<std::shared_ptr<core::Mesh>>(ent) = std::make_shared<core::Mesh>(context, vertices, indices);
+        auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = std::make_shared<Window>(context, "firefox");
+        auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = std::make_shared<core::Material>();
+        mat->diffuse = wind->image();
+        mat->descriptorSet = gfx::vulkan::DescriptorSet::Builder{}
+            .build(context, core::Material::getMaterialDescriptorSetLayout());
+        mat->descriptorSet->write()
+            .pushImageInfo(0, 1, mat->diffuse->descriptorInfo(VK_IMAGE_LAYOUT_GENERAL))
+            .update();
+        mesh->material = mat;
+        auto& descriptor = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>>>(ent);
+        auto& buffer = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::Buffer>>>(ent);
+        for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
+            descriptor.push_back(gfx::vulkan::DescriptorSet::Builder{}
+                .build(context, perObjectDescriptorSetLayout));
+            buffer.push_back(gfx::vulkan::Buffer::Builder{}
+                .build(context, sizeof(PerObjectUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+            descriptor[i]->write()
+                .pushBufferInfo(0, 1, buffer[i]->descriptorInfo())
                 .update();
-
-            auto& descriptor = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>>>(ent);
-
-            auto& buffer = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::Buffer>>>(ent);
-            for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-                descriptor.push_back(gfx::vulkan::DescriptorSet::Builder{}
-                    .build(context, perObjectDescriptorSetLayout));
-                buffer.push_back(gfx::vulkan::Buffer::Builder{}
-                    .build(context, sizeof(PerObjectUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
-                
-                descriptor[i]->write()
-                    .pushBufferInfo(0, 1, buffer[i]->descriptorInfo())
-                    .update();
-            }
         }
+    }
+
+    // TODO (while iterating to a new vulkan abstraction): make the context take in dimensions dependent resource resize callbacks 
+    auto resizeWidthHeightDependentThings = [&]() {
+        auto [width, height] = window->getSize();
+        imageColor = gfx::vulkan::Image::Builder{} 
+            .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        imageDepth = gfx::vulkan::Image::Builder{}
+            .build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        framebuffer = gfx::vulkan::Framebuffer::Builder{}
+            .addAttachmentView(imageColor->imageView())
+            .addAttachmentView(imageDepth->imageView())
+            .build(context, renderpass->renderPass(), width, height);
+
+        swapChain_descriptor->write()
+            .pushImageInfo(0, 1, imageColor->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
+            .update();
+    };
 
     float targetFPS = 60.f;
     auto lastTime = std::chrono::system_clock::now();
@@ -271,7 +276,11 @@ int main(int argc, char **argv) {
             vkCmdDraw(commandBuffer, 6, 1, 0, 0);
             context->endSwapChainRenderPass(commandBuffer);
 
-            context->endFrame(commandBuffer);
+            if (context->endFrame(commandBuffer)) {
+                resizeWidthHeightDependentThings();
+            }
+        } else {
+            resizeWidthHeightDependentThings();
         }
 
     }
