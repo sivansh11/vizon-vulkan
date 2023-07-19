@@ -2,7 +2,7 @@
 
 namespace core {    
 
-Model::Model(std::shared_ptr<gfx::vulkan::Context> context) 
+Model::Model(core::ref<gfx::vulkan::Context> context) 
   : m_context(context) {
 
 }
@@ -42,7 +42,7 @@ void Model::processNode(aiNode *node, const aiScene *scene, aiMatrix4x4 &transfo
     }
 }
 
-std::shared_ptr<Mesh> Model::processMesh(aiMesh *mesh, const aiScene *scene, aiMatrix4x4 &transform) {
+core::ref<Mesh> Model::processMesh(aiMesh *mesh, const aiScene *scene, aiMatrix4x4 &transform) {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -87,16 +87,16 @@ std::shared_ptr<Mesh> Model::processMesh(aiMesh *mesh, const aiScene *scene, aiM
     }
 
     auto processedMaterial = processMaterial(scene->mMaterials[mesh->mMaterialIndex]);
-    auto processedMesh = std::make_shared<Mesh>(m_context, vertices, indices);
+    auto processedMesh = core::make_ref<Mesh>(m_context, vertices, indices);
     transform.Decompose(*(aiVector3D*)(&processedMesh->m_transform.scale), *(aiVector3D*)(&processedMesh->m_transform.rotation), *(aiVector3D*)(&processedMesh->m_transform.translation));
     processedMesh->material = processedMaterial;
     return processedMesh;
 }
 
 
-std::shared_ptr<Material> Model::processMaterial(aiMaterial *material) {
+core::ref<Material> Model::processMaterial(aiMaterial *material) {
 
-    std::shared_ptr<Material> mat = std::make_shared<Material>();
+    core::ref<Material> mat = core::make_ref<Material>();
 
     mat->descriptorSet = gfx::vulkan::DescriptorSet::Builder{}
         .build(m_context, Material::getMaterialDescriptorSetLayout());
@@ -112,7 +112,7 @@ std::shared_ptr<Material> Model::processMaterial(aiMaterial *material) {
 }
 
 
-std::shared_ptr<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiTextureType type, std::string typeName) {
+core::ref<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiTextureType type, std::string typeName) {
     if (mat->GetTextureCount(type) == 0) {
         auto img = gfx::vulkan::Image::Builder{}
             .build2D(m_context, 1, 1, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -144,7 +144,7 @@ std::shared_ptr<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, 
     }
     if (mat->GetTextureCount(type) == 0) return nullptr;
 
-    std::shared_ptr<gfx::vulkan::Image> img;
+    core::ref<gfx::vulkan::Image> img;
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
         aiString str;
         mat->GetTexture(type, i, &str);
@@ -160,7 +160,7 @@ std::shared_ptr<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, 
             img = gfx::vulkan::Image::Builder{}
                 .loadFromPath(m_context, filePath, VK_FORMAT_R8G8B8A8_UNORM);
         
-        // tex = std::make_shared<gfx::Texture>((m_directory + '/' + str.C_Str()).c_str());
+        // tex = core::make_ref<gfx::Texture>((m_directory + '/' + str.C_Str()).c_str());
         m_loadedImages[str.C_Str()] = img;
     }
     return img;

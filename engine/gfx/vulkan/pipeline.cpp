@@ -54,7 +54,7 @@ Pipeline::Builder& Pipeline::Builder::addDynamicState(VkDynamicState state) {
     return *this;
 }
 
-Pipeline::Builder& Pipeline::Builder::addDescriptorSetLayout(std::shared_ptr<DescriptorSetLayout> descriptorSetLayout) {
+Pipeline::Builder& Pipeline::Builder::addDescriptorSetLayout(core::ref<DescriptorSetLayout> descriptorSetLayout) {
     assert(descriptorSetLayout);
     descriptorSetLayouts.push_back(descriptorSetLayout->descriptorSetLayout());
     return *this;
@@ -115,7 +115,7 @@ Pipeline::Builder& Pipeline::Builder::setVertexInputAttributeDescriptionVector(c
 
 
 
-std::shared_ptr<Pipeline> Pipeline::Builder::build(std::shared_ptr<Context> context, VkRenderPass renderPass) {
+core::ref<Pipeline> Pipeline::Builder::build(core::ref<Context> context, VkRenderPass renderPass) {
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos{};
 
     VkPipelineBindPoint pipelineBindPoint;
@@ -259,10 +259,10 @@ std::shared_ptr<Pipeline> Pipeline::Builder::build(std::shared_ptr<Context> cont
         vkDestroyShaderModule(context->device(), pipelineShaderStageCreateInfo.module, nullptr);
     }
 
-    return std::make_shared<Pipeline>(context, pipelineLayout, pipeline, pipelineBindPoint);
+    return core::make_ref<Pipeline>(context, pipelineLayout, pipeline, pipelineBindPoint);
 }
 
-Pipeline::Pipeline(std::shared_ptr<Context> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint) 
+Pipeline::Pipeline(core::ref<Context> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint) 
   : m_context(context),
     m_pipelineLayout(pipelineLayout),
     m_pipeline(pipeline),

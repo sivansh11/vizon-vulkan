@@ -29,7 +29,7 @@ RenderPass::Builder& RenderPass::Builder::setDepthAttachment(const VkAttachmentD
     return *this;
 }
 
-std::shared_ptr<RenderPass> RenderPass::Builder::build(std::shared_ptr<Context> context) {
+core::ref<RenderPass> RenderPass::Builder::build(core::ref<Context> context) {
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = colorAttachmentsRefrences.size();
@@ -72,10 +72,10 @@ std::shared_ptr<RenderPass> RenderPass::Builder::build(std::shared_ptr<Context> 
         std::terminate();
     }
 
-    return std::make_shared<RenderPass>(context, renderPass);
+    return core::make_ref<RenderPass>(context, renderPass);
 }
 
-RenderPass::RenderPass(std::shared_ptr<Context> context, VkRenderPass renderPass)
+RenderPass::RenderPass(core::ref<Context> context, VkRenderPass renderPass)
   : m_context(context), m_renderPass(renderPass) {
     TRACE("Created renderpass");
 }

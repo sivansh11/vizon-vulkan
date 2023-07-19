@@ -12,10 +12,10 @@ namespace vulkan {
 class Buffer {
 public:
     struct Builder {
-        std::shared_ptr<Buffer> build(std::shared_ptr<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
+        core::ref<Buffer> build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
     };  
 
-    Buffer(std::shared_ptr<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory);
+    Buffer(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory);
     ~Buffer();
 
     VkDescriptorBufferInfo descriptorInfo(VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE) {
@@ -31,22 +31,42 @@ public:
 
     // use flush after writing (NOTE: only required when not VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
     void flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
-    // use invalidate before reading (NOTE: only required when not VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
     void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     
-    static void copy(std::shared_ptr<Context> context, Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy);
+    static void copy(core::ref<Context> context, Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy);
 
     VkBuffer& buffer() { return m_buffer; }
     VkDeviceMemory& deviceMemory() { return m_deviceMemory; }
 
 private:
     void *m_mapped{nullptr};
-    std::shared_ptr<Context> m_context;
+    core::ref<Context> m_context;
     VkBuffer m_buffer;
     VkDeviceMemory m_deviceMemory;
 };
 
 } // namespace vulkan
+
+// class buffer_t {
+// public:
+//     struct buffer_info_t {
+//         VkDeviceSize _size /* vulkan buffer size */;
+//         VkBufferUsageFlags _buffer_usage /* vulkan buffer usage flags */;
+//         VkMemoryPropertyFlags _memory_property /* vulkan device memory property flags */;
+//         VkBuffer _buffer /* vulkan buffer handle */;
+//         VkDeviceMemory _deviceMemory /* vulkan device memory handle */;
+//     };
+    
+//     static buffer_t make_buffer(core::ref<vulkan::Context> context, VkDeviceSize size, VkBufferUsageFlags buffer_usage, VkMemoryPropertyFlags memory_property);
+//     static core::ref<buffer_t> make_buffer_ref(core::ref<vulkan::Context> context, VkDeviceSize size, VkBufferUsageFlags buffer_usage, VkMemoryPropertyFlags memory_property);
+
+//     buffer_t(core::ref<vulkan::Context> context, buffer_info_t buffer_info);
+//     ~buffer_t();
+
+// private:
+//     core::ref<vulkan::Context> _context;
+//     buffer_info_t _buffer_info;
+// };
 
 } // namespace gfx
 

@@ -110,6 +110,7 @@ Context::Context(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_IN_FL
 }
 
 Context::~Context() {
+    vkDeviceWaitIdle(m_device);
     vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
@@ -823,6 +824,10 @@ void Context::recreateSwapChainAndItsResources() {
 
     createSwapChain();
     createFramebuffers();
+
+    for (auto resizeCallBack : m_resizeCallBacks) {
+        resizeCallBack();
+    }
 }
 
 } // namespace vulkan

@@ -18,8 +18,8 @@ public:
         Builder& setInitialLayout(VkImageLayout imageLayout);
         // setting compare op enables compare
         Builder& setCompareOp(VkCompareOp compareOp);
-        std::shared_ptr<Image> build2D(std::shared_ptr<Context> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
-        std::shared_ptr<Image> loadFromPath(std::shared_ptr<Context> context, const std::filesystem::path& filePath, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
+        core::ref<Image> build2D(core::ref<Context> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
+        core::ref<Image> loadFromPath(core::ref<Context> context, const std::filesystem::path& filePath, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 
         bool enableMipMaps{false};
         bool enableCompareOp{false};
@@ -43,7 +43,7 @@ public:
         uint32_t mipLevels{};
     };
 
-    Image(std::shared_ptr<Context> context, const ImageInfo& imageInfo);
+    Image(core::ref<Context> context, const ImageInfo& imageInfo);
     ~Image();
 
     VkDescriptorImageInfo descriptorInfo(VkImageLayout imageLayout) {
@@ -60,7 +60,7 @@ public:
     void genMipMaps(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
     void genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout);
 
-    static void copyBufferToImage(std::shared_ptr<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
+    static void copyBufferToImage(core::ref<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
     static void copyBufferToImage(VkCommandBuffer commandBuffer, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
 
     void *map(VkDeviceSize poffset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
@@ -84,7 +84,7 @@ public:
     friend class RenderPass;
 
 private:
-    std::shared_ptr<Context> m_context{};
+    core::ref<Context> m_context{};
     ImageInfo m_imageInfo{};
 };
 

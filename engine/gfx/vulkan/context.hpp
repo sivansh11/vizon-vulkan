@@ -1,6 +1,8 @@
 #ifndef GFX_VULKAN_CONTEXT_HPP
 #define GFX_VULKAN_CONTEXT_HPP
 
+#include "core/core.hpp"
+
 #define GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_NONE
 #define VK_NO_PROTOTYPES
@@ -43,7 +45,7 @@ public:
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    Context(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation);
+    Context(core::ref<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation);
     ~Context();
 
     std::optional<std::pair<VkCommandBuffer, uint32_t>> startFrame();
@@ -79,6 +81,10 @@ public:
 
     VkDescriptorPool descriptorPool() { return m_descriptorPool; }
     
+    void addResizeCallBack(std::function<void()> resizeCallBack) {
+        m_resizeCallBacks.push_back(resizeCallBack);
+    }
+
     const uint32_t MAX_FRAMES_IN_FLIGHT;
 
 private:
@@ -121,7 +127,7 @@ private:
     void recreateSwapChainAndItsResources();
 
 private:
-    std::shared_ptr<core::Window> window;
+    core::ref<core::Window> window;
 
     const bool m_validation;
     VkPhysicalDeviceProperties m_physicalDeviceProperties{};
@@ -137,27 +143,37 @@ private:
     VkSurfaceKHR m_surface{};
     VkPhysicalDevice m_physicalDevice{};
     VkDevice m_device{};
+
+    // maybe a separate queue class with its own submits ?
+    // how would physical device selection work tho ?
+    // might need to hint requirement of the following queues in advance to the context
     VkQueue m_graphicsQueue{};
     VkQueue m_presentQueue{};
+    
+    // swapchain stuff
     VkSwapchainKHR m_swapChain{};
     VkFormat m_swapChainFormat{};
     VkExtent2D m_swapChainExtent;
     std::vector<VkImage> m_swapChainImages{};
-    // NOTE: maybe change this
-    std::vector<VkImageView> m_swapChainImageViews{};
-    VkRenderPass m_swapChainRenderPass{};
+    std::vector<VkImageView> m_swapChainImageViews{}; // NOTE: maybe change this
     std::vector<VkFramebuffer> m_swapChainFramebuffers{};
+    VkRenderPass m_swapChainRenderPass{}; // no really a part of swapchain, but still in it ?
+
+    // command buffers, can stay
     VkCommandPool m_commandPool{};
     std::vector<VkCommandBuffer> m_commandBuffers{};
 
+    // renderer part ?
     uint32_t m_currentFrame{};
     uint32_t m_imageIndex{};
-
     std::vector<VkSemaphore> m_imageAvailableSemaphores{};
     std::vector<VkSemaphore> m_renderFinishedSemaphores{};
     std::vector<VkFence> m_inFlightFences{};
+    
+    // maybe someway to simplify descriptor set creations from the pool
+    VkDescriptorPool m_descriptorPool{}; // maybe create a seperate descriptor pool in the renderer ?
 
-    VkDescriptorPool m_descriptorPool{};
+    std::vector<std::function<void()>> m_resizeCallBacks;
 };
 
 } // namespace vulkan

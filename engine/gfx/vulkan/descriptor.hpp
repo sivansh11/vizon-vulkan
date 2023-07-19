@@ -13,12 +13,12 @@ public:
     struct Builder {
         Builder& addLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, uint32_t count, VkShaderStageFlags shaderStageFlags);
         
-        std::shared_ptr<DescriptorSetLayout> build(std::shared_ptr<Context> context);
+        core::ref<DescriptorSetLayout> build(core::ref<Context> context);
 
         std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings{};
     };
 
-    DescriptorSetLayout(std::shared_ptr<Context> context, VkDescriptorSetLayout descriptorSetLayout);
+    DescriptorSetLayout(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout);
     ~DescriptorSetLayout();
 
     VkDescriptorSetLayout& descriptorSetLayout() { return m_descriptorSetLayout; } 
@@ -27,17 +27,17 @@ public:
     DescriptorSetLayout& operator=(const DescriptorSetLayout&) = delete;
 
 private:
-    std::shared_ptr<Context> m_context;
+    core::ref<Context> m_context;
     VkDescriptorSetLayout m_descriptorSetLayout{};
 };
 
 class DescriptorSet {
 public:
     struct Builder {
-        std::shared_ptr<DescriptorSet> build(std::shared_ptr<Context> context, std::shared_ptr<DescriptorSetLayout> descriptorSetLayout);
+        core::ref<DescriptorSet> build(core::ref<Context> context, core::ref<DescriptorSetLayout> descriptorSetLayout);
     };
 
-    DescriptorSet(std::shared_ptr<Context> context, VkDescriptorSet descriptorSet);
+    DescriptorSet(core::ref<Context> context, VkDescriptorSet descriptorSet);
     ~DescriptorSet();
 
     DescriptorSet(const DescriptorSet&) = delete;
@@ -46,21 +46,21 @@ public:
     VkDescriptorSet& descriptorSet() { return m_descriptorSet; }
 
     struct Write {
-        Write(std::shared_ptr<Context> context, VkDescriptorSet descriptorSet);
+        Write(core::ref<Context> context, VkDescriptorSet descriptorSet);
         Write& pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptorImageInfo);
         Write& pushBufferInfo(uint32_t binding, uint32_t count, const VkDescriptorBufferInfo& descriptorBuffeInfo);
 
         void update();
 
         std::vector<VkWriteDescriptorSet> writes;
-        std::shared_ptr<Context> context;
+        core::ref<Context> context;
         VkDescriptorSet descriptorSet{};
     };    
 
     Write& write();
 
 private:
-    std::shared_ptr<Context> m_context;
+    core::ref<Context> m_context;
     VkDescriptorSet m_descriptorSet{}; 
 };
 

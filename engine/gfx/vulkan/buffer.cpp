@@ -6,7 +6,7 @@ namespace gfx {
 
 namespace vulkan {
 
-std::shared_ptr<Buffer> Buffer::Builder::build(std::shared_ptr<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
+core::ref<Buffer> Buffer::Builder::build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = size;
@@ -35,10 +35,10 @@ std::shared_ptr<Buffer> Buffer::Builder::build(std::shared_ptr<Context> context,
 
     vkBindBufferMemory(context->device(), buffer, deviceMemory, 0);
 
-    return std::make_shared<Buffer>(context, buffer, deviceMemory);
+    return core::make_ref<Buffer>(context, buffer, deviceMemory);
 }
 
-Buffer::Buffer(std::shared_ptr<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory) 
+Buffer::Buffer(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory) 
   : m_context(context),
     m_buffer(buffer),
     m_deviceMemory(deviceMemory) {
@@ -80,7 +80,7 @@ void Buffer::unmap() {
     vkUnmapMemory(m_context->device(), m_deviceMemory);
 }
 
-void Buffer::copy(std::shared_ptr<Context> context, Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy) {
+void Buffer::copy(core::ref<Context> context, Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy) {
     VkCommandBuffer commandBuffer = context->startSingleUseCommandBuffer();
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer.buffer(), dstBuffer.buffer(), 1, &bufferCopy);

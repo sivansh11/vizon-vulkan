@@ -27,17 +27,17 @@ struct Vertex {
 
 class Mesh {
 public:
-    Mesh(std::shared_ptr<gfx::vulkan::Context> context, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+    Mesh(core::ref<gfx::vulkan::Context> context, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
     ~Mesh();
 
     void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool withMaterial);
 
-    std::shared_ptr<Material> material;
+    core::ref<Material> material;
 
     friend class Model;
 private:
-    std::shared_ptr<gfx::vulkan::Buffer> m_vertices;
-    std::shared_ptr<gfx::vulkan::Buffer> m_indices;
+    core::ref<gfx::vulkan::Buffer> m_vertices;
+    core::ref<gfx::vulkan::Buffer> m_indices;
     uint32_t m_indexCount;
     uint32_t m_vertexCount;
     core::Transform m_transform;
