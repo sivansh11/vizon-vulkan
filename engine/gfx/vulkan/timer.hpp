@@ -11,7 +11,7 @@ namespace vulkan {
 
 class Timer {
 public:
-    Timer(std::shared_ptr<Context> context);
+    Timer(core::ref<Context> context);
     ~Timer();
 
     void begin(VkCommandBuffer commandBuffer);
@@ -20,7 +20,7 @@ public:
     std::optional<float> getTime();
 
 private:
-    std::shared_ptr<Context> m_context{};
+    core::ref<Context> m_context{};
     VkQueryPool m_queryPool{};
 };
 

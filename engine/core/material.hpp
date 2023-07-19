@@ -9,16 +9,16 @@
 namespace core {
 
 struct Material {
-    std::shared_ptr<gfx::vulkan::DescriptorSet> descriptorSet;
+    core::ref<gfx::vulkan::DescriptorSet> descriptorSet;
 
-    std::shared_ptr<gfx::vulkan::Image> diffuse;
-    // std::shared_ptr<gfx::vulkan::Image> specular;
-    // std::shared_ptr<gfx::vulkan::Image> normal;
+    core::ref<gfx::vulkan::Image> diffuse;
+    // core::ref<gfx::vulkan::Image> specular;
+    // core::ref<gfx::vulkan::Image> normal;
 
     void update();
 
-    static void init(std::shared_ptr<gfx::vulkan::Context> context);
-    static std::shared_ptr<gfx::vulkan::DescriptorSetLayout> getMaterialDescriptorSetLayout();
+    static void init(core::ref<gfx::vulkan::Context> context);
+    static core::ref<gfx::vulkan::DescriptorSetLayout> getMaterialDescriptorSetLayout();
     static void destroy();
 };
 

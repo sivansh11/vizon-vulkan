@@ -4,7 +4,7 @@
 
 namespace core {
 
-Mesh::Mesh(std::shared_ptr<gfx::vulkan::Context> context, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
+Mesh::Mesh(core::ref<gfx::vulkan::Context> context, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) {
     assert(vertices.size() > 0);
     assert(indices.size() > 0);
 
@@ -13,7 +13,7 @@ Mesh::Mesh(std::shared_ptr<gfx::vulkan::Context> context, const std::vector<Vert
 
     m_vertices = gfx::vulkan::Buffer::Builder{}
         .build(context, vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    std::shared_ptr<gfx::vulkan::Buffer> stagingBuffer = gfx::vulkan::Buffer::Builder{}
+    core::ref<gfx::vulkan::Buffer> stagingBuffer = gfx::vulkan::Buffer::Builder{}
         .build(context, vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     auto map = stagingBuffer->map();
     std::memcpy(map, vertices.data(), vertices.size() * sizeof(vertices[0]));

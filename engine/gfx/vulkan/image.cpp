@@ -49,7 +49,7 @@ uint32_t numChannels(VkFormat format) {
     return 0;
 }
 
-std::shared_ptr<Image> Image::Builder::build2D(std::shared_ptr<Context> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
+core::ref<Image> Image::Builder::build2D(core::ref<Context> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -150,10 +150,10 @@ std::shared_ptr<Image> Image::Builder::build2D(std::shared_ptr<Context> context,
     imageInfo.height = height;
     imageInfo.size = width * height * numChannels(format);
     
-    return std::make_shared<Image>(context, imageInfo);
+    return core::make_ref<Image>(context, imageInfo);
 }
 
-std::shared_ptr<Image> Image::Builder::loadFromPath(std::shared_ptr<Context> context, const std::filesystem::path& filePath, VkFormat format) {
+core::ref<Image> Image::Builder::loadFromPath(core::ref<Context> context, const std::filesystem::path& filePath, VkFormat format) {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);  
     stbi_uc *pixels = stbi_load(filePath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -211,7 +211,7 @@ VkImageAspectFlags Image::Builder::getImageAspect(VkFormat format) {
     return VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
-Image::Image(std::shared_ptr<Context> context, const ImageInfo& imageInfo) 
+Image::Image(core::ref<Context> context, const ImageInfo& imageInfo) 
   : m_context(context),
     m_imageInfo(imageInfo) {
     TRACE("Created image");
@@ -432,7 +432,7 @@ void Image::genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout) {
     m_context->endSingleUseCommandBuffer(commandBuffer);
 }
 
-void Image::copyBufferToImage(std::shared_ptr<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
+void Image::copyBufferToImage(core::ref<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
     auto commandBuffer = context->startSingleUseCommandBuffer();
 
     copyBufferToImage(commandBuffer, buffer, image, bufferImageCopy);

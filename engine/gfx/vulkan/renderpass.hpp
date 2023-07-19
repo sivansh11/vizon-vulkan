@@ -12,7 +12,7 @@ public:
     struct Builder {
         Builder& addColorAttachment(const VkAttachmentDescription& attachmentDescription);
         Builder& setDepthAttachment(const VkAttachmentDescription& attachmentDescription);
-        std::shared_ptr<RenderPass> build(std::shared_ptr<Context> context);
+        core::ref<RenderPass> build(core::ref<Context> context);
 
         bool depthAdded = false;
         uint32_t counter = 0;
@@ -21,7 +21,7 @@ public:
         VkAttachmentReference depthAttachmentRefrence{};
     };
 
-    RenderPass(std::shared_ptr<Context> context, VkRenderPass renderPass);
+    RenderPass(core::ref<Context> context, VkRenderPass renderPass);
     ~RenderPass();
 
     void begin(VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, const VkRect2D renderArea, const std::vector<VkClearValue>& clearValues);
@@ -30,7 +30,7 @@ public:
     VkRenderPass& renderPass() { return m_renderPass; }
 
 private:
-    std::shared_ptr<Context> m_context;
+    core::ref<Context> m_context;
     VkRenderPass m_renderPass;
 };
 

@@ -19,7 +19,7 @@ public:
         Builder& addShader(const std::filesystem::path& shaderPath);
         Builder& addDynamicState(VkDynamicState state);
 
-        Builder& addDescriptorSetLayout(std::shared_ptr<DescriptorSetLayout> descriptorSetLayout);
+        Builder& addDescriptorSetLayout(core::ref<DescriptorSetLayout> descriptorSetLayout);
 
         Builder& addDefaultColorBlendAttachmentState();
         Builder& addColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState);
@@ -31,7 +31,7 @@ public:
         Builder& setVertexInputBindingDescriptionVector(const std::vector<VkVertexInputBindingDescription>& val);
         Builder& setVertexInputAttributeDescriptionVector(const std::vector<VkVertexInputAttributeDescription>& val);        
 
-        std::shared_ptr<Pipeline> build(std::shared_ptr<Context> context, VkRenderPass renderPass);
+        core::ref<Pipeline> build(core::ref<Context> context, VkRenderPass renderPass);
 
         std::vector<VkDynamicState> dynamicStates;
         std::vector<std::filesystem::path> shaderPaths;
@@ -42,7 +42,7 @@ public:
         VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{};
     };
 
-    Pipeline(std::shared_ptr<Context> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint);
+    Pipeline(core::ref<Context> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint);
     ~Pipeline();
 
     void bind(VkCommandBuffer commandBuffer);
@@ -50,7 +50,7 @@ public:
     VkPipelineLayout& pipelineLayout() { return m_pipelineLayout; }
 
 private:
-    std::shared_ptr<Context> m_context;
+    core::ref<Context> m_context;
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_pipeline;
     VkPipelineBindPoint m_pipelineBindPoint;

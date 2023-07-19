@@ -4,14 +4,14 @@
 
 namespace core {
 
-static std::shared_ptr<gfx::vulkan::DescriptorSetLayout> globalMaterialDescriptorSetLayout{nullptr};
+static core::ref<gfx::vulkan::DescriptorSetLayout> globalMaterialDescriptorSetLayout{nullptr};
 
-std::shared_ptr<gfx::vulkan::DescriptorSetLayout> Material::getMaterialDescriptorSetLayout() {
+core::ref<gfx::vulkan::DescriptorSetLayout> Material::getMaterialDescriptorSetLayout() {
     assert(globalMaterialDescriptorSetLayout);
     return globalMaterialDescriptorSetLayout;
 }
 
-void Material::init(std::shared_ptr<gfx::vulkan::Context> context) {
+void Material::init(core::ref<gfx::vulkan::Context> context) {
     globalMaterialDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         // .addLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)

@@ -6,7 +6,7 @@ namespace gfx {
 
 namespace vulkan {
 
-Timer::Timer(std::shared_ptr<Context> context)
+Timer::Timer(core::ref<Context> context)
   : m_context(context) {
     VkQueryPoolCreateInfo queryPoolCreateInfo{};
     queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;

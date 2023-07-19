@@ -28,9 +28,9 @@
 #include <atomic>
 
 int main(int argc, char **argv) {
-    auto window = std::make_shared<core::Window>("VIZON-vulkan", 800, 600);
-    auto context = std::make_shared<gfx::vulkan::Context>(window, 2, true);
-    auto dispatcher = std::make_shared<event::Dispatcher>();
+    auto window = core::make_ref<core::Window>("VIZON-vulkan", 800, 600);
+    auto context = core::make_ref<gfx::vulkan::Context>(window, 2, true);
+    auto dispatcher = core::make_ref<event::Dispatcher>();
     core::Material::init(context);
 
     entt::registry scene;
@@ -145,9 +145,9 @@ int main(int argc, char **argv) {
             0, 1, 2,
             3, 4, 5
         };
-        auto mesh = scene.emplace<std::shared_ptr<core::Mesh>>(ent) = std::make_shared<core::Mesh>(context, vertices, indices);
-        auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = std::make_shared<Window>(context, "firefox");
-        auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = std::make_shared<core::Material>();
+        auto mesh = scene.emplace<std::shared_ptr<core::Mesh>>(ent) = core::make_ref<core::Mesh>(context, vertices, indices);
+        auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = core::make_ref<Window>(context, "firefox");
+        auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = core::make_ref<core::Material>();
         mat->diffuse = wind->image();
         mat->descriptorSet = gfx::vulkan::DescriptorSet::Builder{}
             .build(context, core::Material::getMaterialDescriptorSetLayout());
@@ -168,8 +168,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // TODO (while iterating to a new vulkan abstraction): make the context take in dimensions dependent resource resize callbacks 
-    auto resizeWidthHeightDependentThings = [&]() {
+    context->addResizeCallBack([&]() {
         auto [width, height] = window->getSize();
         imageColor = gfx::vulkan::Image::Builder{} 
             .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -185,7 +184,7 @@ int main(int argc, char **argv) {
         swapChain_descriptor->write()
             .pushImageInfo(0, 1, imageColor->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
             .update();
-    };
+    });
 
     float targetFPS = 60.f;
     auto lastTime = std::chrono::system_clock::now();
@@ -234,11 +233,9 @@ int main(int argc, char **argv) {
             globalUniformBuffer.invView = glm::inverse(globalUniformBuffer.view);
             std::memcpy(globalUniformBufferObject[currentIndex]->map(), &globalUniformBuffer, sizeof(GlobalUniformBufferStruct));        
 
-            // windowing.update(commandBuffer);
             for (auto [ent, window] : scene.view<std::shared_ptr<Window>>().each()) {
                 window->update(commandBuffer);
             }
-
 
             renderpass->begin(commandBuffer, framebuffer->framebuffer(), VkRect2D{
                 .offset = {0, 0},
@@ -251,7 +248,6 @@ int main(int argc, char **argv) {
     		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
             pipeline->bind(commandBuffer);
 
-            // VkDescriptorSet sets[] = { globalUniformBufferDescriptorSet[currentIndex]->descriptorSet(), perObjectUniformBufferDescriptorSet[currentIndex]->descriptorSet() };
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout(), 0, 1, &globalUniformBufferDescriptorSet[currentIndex]->descriptorSet(), 0, nullptr);
             for (auto [ent, mesh, transform, descriptor, buffer] : scene.view<std::shared_ptr<core::Mesh>, 
                                                                               core::Transform,
@@ -276,13 +272,8 @@ int main(int argc, char **argv) {
             vkCmdDraw(commandBuffer, 6, 1, 0, 0);
             context->endSwapChainRenderPass(commandBuffer);
 
-            if (context->endFrame(commandBuffer)) {
-                resizeWidthHeightDependentThings();
-            }
-        } else {
-            resizeWidthHeightDependentThings();
+            context->endFrame(commandBuffer);
         }
-
     }
 
     vkDeviceWaitIdle(context->device());

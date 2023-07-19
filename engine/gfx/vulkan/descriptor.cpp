@@ -16,7 +16,7 @@ DescriptorSetLayout::Builder& DescriptorSetLayout::Builder::addLayoutBinding(uin
     return *this;
 }
 
-std::shared_ptr<DescriptorSetLayout> DescriptorSetLayout::Builder::build(std::shared_ptr<Context> context) {
+core::ref<DescriptorSetLayout> DescriptorSetLayout::Builder::build(core::ref<Context> context) {
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptorSetLayoutCreateInfo.bindingCount = descriptorSetLayoutBindings.size();
@@ -29,10 +29,10 @@ std::shared_ptr<DescriptorSetLayout> DescriptorSetLayout::Builder::build(std::sh
         std::terminate();
     }
 
-    return std::make_shared<DescriptorSetLayout>(context, descriptorSetLayout);
+    return core::make_ref<DescriptorSetLayout>(context, descriptorSetLayout);
 }
 
-DescriptorSetLayout::DescriptorSetLayout(std::shared_ptr<Context> context, VkDescriptorSetLayout descriptorSetLayout) 
+DescriptorSetLayout::DescriptorSetLayout(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout) 
   : m_context(context),
     m_descriptorSetLayout(descriptorSetLayout) {
 
@@ -44,7 +44,7 @@ DescriptorSetLayout::~DescriptorSetLayout() {
     TRACE("Destroyed descriptor set layout");
 }
 
-std::shared_ptr<DescriptorSet> DescriptorSet::Builder::build(std::shared_ptr<Context> context, std::shared_ptr<DescriptorSetLayout> descriptorSetLayout) {
+core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> context, core::ref<DescriptorSetLayout> descriptorSetLayout) {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.descriptorPool = context->descriptorPool();
@@ -58,10 +58,10 @@ std::shared_ptr<DescriptorSet> DescriptorSet::Builder::build(std::shared_ptr<Con
         ERROR("Failed to allocate descriptor set");
         std::terminate();
     }
-    return std::make_shared<DescriptorSet>(context, descriptorSet);
+    return core::make_ref<DescriptorSet>(context, descriptorSet);
 }
 
-DescriptorSet::DescriptorSet(std::shared_ptr<Context> context, VkDescriptorSet descriptorSet) 
+DescriptorSet::DescriptorSet(core::ref<Context> context, VkDescriptorSet descriptorSet) 
   : m_context(context),
     m_descriptorSet(descriptorSet) {
     TRACE("Created descriptor set");
@@ -72,7 +72,7 @@ DescriptorSet::~DescriptorSet() {
     // TRACE("Destroyed descriptor set");
 }
 
-DescriptorSet::Write::Write(std::shared_ptr<Context> context, VkDescriptorSet descriptorSet) 
+DescriptorSet::Write::Write(core::ref<Context> context, VkDescriptorSet descriptorSet) 
   : context(context),
     descriptorSet(descriptorSet) {
     

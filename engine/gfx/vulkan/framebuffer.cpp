@@ -11,7 +11,7 @@ Framebuffer::Builder& Framebuffer::Builder::addAttachmentView(VkImageView view) 
     return *this;
 }
 
-std::shared_ptr<Framebuffer> Framebuffer::Builder::build(std::shared_ptr<Context> context, VkRenderPass renderPass, uint32_t width, uint32_t height) {
+core::ref<Framebuffer> Framebuffer::Builder::build(core::ref<Context> context, VkRenderPass renderPass, uint32_t width, uint32_t height) {
     VkFramebufferCreateInfo framebufferCreateInfo{};
     framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferCreateInfo.renderPass = renderPass;
@@ -28,10 +28,10 @@ std::shared_ptr<Framebuffer> Framebuffer::Builder::build(std::shared_ptr<Context
         std::terminate();
     }
 
-    return std::make_shared<Framebuffer>(context, framebuffer);
+    return core::make_ref<Framebuffer>(context, framebuffer);
 }
 
-Framebuffer::Framebuffer(std::shared_ptr<Context> context, VkFramebuffer framebuffer) 
+Framebuffer::Framebuffer(core::ref<Context> context, VkFramebuffer framebuffer) 
   : m_context(context), m_framebuffer(framebuffer) {
     TRACE("Created framebuffer");
 }
