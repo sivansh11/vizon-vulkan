@@ -65,7 +65,7 @@ Context::Context(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_IN_FL
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pEngineName = "Horizon";
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    applicationInfo.apiVersion = VK_API_VERSION_1_0;
+    applicationInfo.apiVersion = VK_API_VERSION_1_3;
 
     VkInstanceCreateInfo instanceCreateInfo{};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -304,6 +304,7 @@ void Context::pushRequiredInstanceExtensions() {
     for (uint32_t i = 0; i < glfwExtensionCount; i++) {
         m_instanceExtensions.push_back(glfwExtensions[i]);
     }
+    m_instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
 }
 
 VkDebugUtilsMessengerCreateInfoEXT Context::getDebugUtilsMessengerCreateInfo() {
@@ -343,6 +344,12 @@ void Context::createSurface() {
 
 void Context::pushRequiredDeviceExtensions() {
     m_deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    m_deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+    m_deviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+    m_deviceExtensions.push_back("VK_EXT_descriptor_indexing");
+    m_deviceExtensions.push_back(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
+    m_deviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    m_deviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
 }
 
 Context::QueueFamilyIndices Context::findQueueFamilies(VkPhysicalDevice physicalDevice) {
@@ -428,7 +435,7 @@ bool Context::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice) {
 
     INFO("timestampperiod {}", deviceProperties.limits.timestampPeriod);    
 
-    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.limits.timestampComputeAndGraphics == VK_TRUE && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    return queueFamilyIndices.isComplete() && swapChainAdequate && deviceProperties.limits.timestampComputeAndGraphics == VK_TRUE && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
 void Context::pickPhysicalDevice() {
@@ -461,6 +468,19 @@ void Context::pickPhysicalDevice() {
 
     m_physicalDeviceProperties = deviceProperties;
 
+    VkPhysicalDeviceRayTracingPipelinePropertiesKHR physicalDeviceRayTracingPipelinePropertiesKHR{};
+    physicalDeviceRayTracingPipelinePropertiesKHR.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+
+    VkPhysicalDeviceProperties2 physicalDeviceProperties2{}; 
+    physicalDeviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    physicalDeviceProperties2.properties = m_physicalDeviceProperties;
+    physicalDeviceProperties2.pNext = &physicalDeviceRayTracingPipelinePropertiesKHR;
+
+    vkGetPhysicalDeviceProperties2(m_physicalDevice, &physicalDeviceProperties2);
+
+    VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{};
+    vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &physicalDeviceMemoryProperties);
+
     INFO("Picked physical device: {}", deviceProperties.deviceName);
 }
 
@@ -484,7 +504,37 @@ void Context::createLogicalDevice() {
         deviceQueueCreateInfos.push_back(deviceQueueCreateInfo);
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
+    VkPhysicalDeviceBufferDeviceAddressFeatures
+        physicalDeviceBufferDeviceAddressFeatures = {
+            .sType =
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+            .pNext = NULL,
+            .bufferDeviceAddress = VK_TRUE,
+            .bufferDeviceAddressCaptureReplay = VK_FALSE,
+            .bufferDeviceAddressMultiDevice = VK_FALSE};
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR
+        physicalDeviceAccelerationStructureFeatures = {
+            .sType =
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+            .pNext = &physicalDeviceBufferDeviceAddressFeatures,
+            .accelerationStructure = VK_TRUE,
+            .accelerationStructureCaptureReplay = VK_FALSE,
+            .accelerationStructureIndirectBuild = VK_FALSE,
+            .accelerationStructureHostCommands = VK_FALSE,
+            .descriptorBindingAccelerationStructureUpdateAfterBind = VK_FALSE};
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR
+        physicalDeviceRayTracingPipelineFeatures = {
+            .sType =
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+            .pNext = &physicalDeviceAccelerationStructureFeatures,
+            .rayTracingPipeline = VK_TRUE,
+            .rayTracingPipelineShaderGroupHandleCaptureReplay = VK_FALSE,
+            .rayTracingPipelineShaderGroupHandleCaptureReplayMixed = VK_FALSE,
+            .rayTracingPipelineTraceRaysIndirect = VK_FALSE,
+            .rayTraversalPrimitiveCulling = VK_FALSE};
+    VkPhysicalDeviceFeatures deviceFeatures = {.geometryShader = VK_TRUE};
 
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -492,6 +542,7 @@ void Context::createLogicalDevice() {
     deviceCreateInfo.queueCreateInfoCount = deviceQueueCreateInfos.size();
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
     deviceCreateInfo.enabledExtensionCount = 0;
+    deviceCreateInfo.pNext = &physicalDeviceRayTracingPipelineFeatures;
 
     if (m_validation) 
         pushDeviceValidationLayers();
@@ -507,6 +558,8 @@ void Context::createLogicalDevice() {
         std::terminate();
     }
     TRACE("Created device");
+
+    // volkLoadDevice(m_device);
 
     vkGetDeviceQueue(m_device, queueFamilyIndices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_device, queueFamilyIndices.presentFamily.value(), 0, &m_presentQueue);

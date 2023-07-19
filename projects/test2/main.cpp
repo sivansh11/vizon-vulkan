@@ -27,14 +27,33 @@ int main(int argc, char **argv) {
 
     auto [width, height] = window->getSize();
 
-    auto main_imageColor = gfx::vulkan::Image::Builder{}
+    auto main_renderPass = gfx::vulkan::RenderPass::Builder{}
+        .addColorAttachment(VkAttachmentDescription{
+            .format = VK_FORMAT_R8G8B8A8_SRGB,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
+        })
+        .setDepthAttachment(VkAttachmentDescription{
+            .format = VK_FORMAT_D32_SFLOAT,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
+        })
+        .build(context);
+
+    auto main_imageColor = gfx::vulkan::Image::Builder{} 
         .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     auto main_imageDepth = gfx::vulkan::Image::Builder{}
-        .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        .build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     auto main_framebuffer = gfx::vulkan::Framebuffer::Builder{}
         .addAttachmentView(main_imageColor->imageView())
         .addAttachmentView(main_imageDepth->imageView())
-        .build(context, context->swapChainRenderPass(), width, height);
+        .build(context, main_renderPass->renderPass(), width, height);
 
     auto swapChain_descriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_ALL)
@@ -52,6 +71,17 @@ int main(int argc, char **argv) {
         .addShader("../../assets/shaders/test2/swapchain/base.vert.spv")
         .addShader("../../assets/shaders/test2/swapchain/base.frag.spv")
         .build(context, context->swapChainRenderPass());
+
+    auto buffer = gfx::vulkan::Buffer::Builder{}
+        .build(context, 10, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+          VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VkBufferDeviceAddressInfo vertexBufferDeviceAddressInfo{};
+    vertexBufferDeviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    vertexBufferDeviceAddressInfo.buffer = buffer->buffer();
+
+    VkDeviceAddress bufferDeviceAddress = vkGetBufferDeviceAddress(context->device(), &vertexBufferDeviceAddressInfo);
+
 
     float targetFPS = 60.f;
     auto lastTime = std::chrono::system_clock::now();

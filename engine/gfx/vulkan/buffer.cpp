@@ -22,10 +22,18 @@ core::ref<Buffer> Buffer::Builder::build(core::ref<Context> context, VkDeviceSiz
     VkMemoryRequirements memoryRequirements{};
     vkGetBufferMemoryRequirements(context->device(), buffer, &memoryRequirements);
 
+    VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+        .pNext = NULL,
+        .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        .deviceMask = 0};
+
+
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryAllocateInfo.allocationSize = memoryRequirements.size;
     memoryAllocateInfo.memoryTypeIndex = context->findMemoryType(memoryRequirements.memoryTypeBits, memoryTypeIndex);
+    memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
 
     VkDeviceMemory deviceMemory;
     if (vkAllocateMemory(context->device(), &memoryAllocateInfo, nullptr, &deviceMemory) != VK_SUCCESS) {
