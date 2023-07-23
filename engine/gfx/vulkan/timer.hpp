@@ -9,6 +9,7 @@ namespace gfx {
     
 namespace vulkan {
 
+// GPU side profiler
 class Timer {
 public:
     Timer(core::ref<Context> context);

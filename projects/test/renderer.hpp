@@ -34,7 +34,7 @@ private:
 
     std::shared_ptr<gfx::vulkan::DescriptorSetLayout> depthDescriptorSetLayout0;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> depthDescriptorSet0;
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> depthSet0UniformBuffer;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> depthSet0UniformBuffer;
     std::vector<void *> depthSet0UniformBufferMap;
     std::shared_ptr<gfx::vulkan::RenderPass> depthRenderPass;
     std::shared_ptr<gfx::vulkan::Image> depthImage;
@@ -46,8 +46,8 @@ private:
     std::shared_ptr<gfx::vulkan::DescriptorSetLayout> descriptorSetLayout1;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> descriptorSet0;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> descriptorSet1;
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> set0UniformBuffer;
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> set1UniformBuffer;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> set0UniformBuffer;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> set1UniformBuffer;
     std::vector<void *> set0UniformBufferMap;
     std::vector<void *> set1UniformBufferMap;
     std::shared_ptr<gfx::vulkan::RenderPass> deferredRenderPass;
@@ -60,7 +60,7 @@ private:
 
     std::shared_ptr<gfx::vulkan::DescriptorSetLayout> shadowDescriptorSetLayout0;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> shadowDescriptorSet0;
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> shadowSet0UniformBuffer;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> shadowSet0UniformBuffer;
     std::vector<void *> shadowSet0UniformBufferMap;
     std::shared_ptr<gfx::vulkan::RenderPass> shadowRenderPass;
     std::shared_ptr<gfx::vulkan::Image> shadowMapImage;
@@ -75,7 +75,7 @@ private:
     std::shared_ptr<gfx::vulkan::Framebuffer> ssaoFramebuffer;
     std::shared_ptr<gfx::vulkan::Pipeline> ssaoPipeline;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> ssaoSet0;
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> ssaoSet0UniformBuffer;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> ssaoSet0UniformBuffer;
     std::vector<void *> ssaoSet0UniformBufferMap;
     std::shared_ptr<gfx::vulkan::Timer> ssaoTimer;  
 
@@ -85,7 +85,7 @@ private:
     std::shared_ptr<gfx::vulkan::DescriptorSetLayout> compositeSetLayout0;
     std::shared_ptr<gfx::vulkan::Pipeline> compositePipeline;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> compositeSet0;
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> compositeSet0UniformBuffer;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> compositeSet0UniformBuffer;
     std::vector<void *> compositeSet0UniformBufferMap;
     std::shared_ptr<gfx::vulkan::Timer> compositeTimer;  
 

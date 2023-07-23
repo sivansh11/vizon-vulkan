@@ -2,6 +2,105 @@
 
 namespace core {    
 
+std::optional<texture_info_t> process_texture(model_loading_info_t& model_loading_info, aiMaterial *material, aiTextureType type, texture_type_t texture_type) {
+    if (material->GetTextureCount(type) == 0) {
+        return std::nullopt;
+    }
+
+    for (uint32_t i = 0; i < material->GetTextureCount(type); i++) {
+        aiString name;
+        material->GetTexture(type, i, &name);
+        
+        texture_info_t texture_info{};
+        texture_info._file_path = model_loading_info._file_path.parent_path();
+        texture_info._file_path /= name.C_Str();
+        texture_info._texture_type = texture_type;
+        return { texture_info };
+    }
+    assert(false);
+    return std::nullopt;
+}
+
+material_t process_material(model_loading_info_t& model_loading_info, aiMaterial *material) {
+    material_t loaded_material;
+
+    if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_DIFFUSE, texture_type_t::e_diffuse_map)) {
+        loaded_material._texture_infos.push_back(*texture_info);        
+    }
+
+    if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_NORMALS, texture_type_t::e_normal_map)) {
+        loaded_material._texture_infos.push_back(*texture_info);        
+    }
+
+    if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_SPECULAR, texture_type_t::e_specular_map)) {
+        loaded_material._texture_infos.push_back(*texture_info);        
+    }  
+
+    return loaded_material;
+}
+
+mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, const aiScene *scene) {
+    mesh_t loaded_mesh;
+    loaded_mesh._vertices.reserve(mesh->mNumVertices);
+    for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
+        vertex_t vertex{};
+
+        vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
+        vertex.normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
+
+        if (mesh->mTextureCoords[0]) {
+            vertex.uv = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+        } else {
+            vertex.uv = { 0, 0 };
+        }
+
+        if (mesh->HasTangentsAndBitangents()) {
+            vertex.tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
+            vertex.biTangent = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
+        } else {
+
+        }
+        loaded_mesh._vertices.push_back(vertex);
+    }
+    
+    for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
+        aiFace& face = mesh->mFaces[i];
+        for (uint32_t j = 0; j < face.mNumIndices; j++) {
+            loaded_mesh._indices.push_back(face.mIndices[j]);
+        }
+    }
+
+    loaded_mesh._material = process_material(model_loading_info, scene->mMaterials[mesh->mMaterialIndex]);
+    return loaded_mesh;
+}
+
+void process_node(model_loading_info_t& model_loading_info, aiNode *node, const aiScene *scene) {
+    for (uint32_t i = 0; i < node->mNumChildren; i++) {
+        process_node(model_loading_info, node->mChildren[i], scene);
+    }
+    for (uint32_t i = 0; i < node->mNumMeshes; i++) {
+        model_loading_info._model._meshes.push_back(process_mesh(model_loading_info, scene->mMeshes[node->mMeshes[i]], scene));
+    }
+}
+
+model_t load_model_from_path(const std::filesystem::path& file_path) {
+    Assimp::Importer importer{};
+    const aiScene *scene = importer.ReadFile(file_path.string(),
+                                             aiProcess_Triangulate          |
+                                             aiProcess_GenNormals           |
+                                             aiProcess_CalcTangentSpace     |
+                                             aiProcess_PreTransformVertices
+                                            );
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        throw std::runtime_error(importer.GetErrorString());
+    }
+
+    model_loading_info_t model_loading_info{};
+    model_loading_info._file_path = file_path;
+    process_node(model_loading_info, scene->mRootNode, scene);
+    return model_loading_info._model;
+}
+
 Model::Model(core::ref<gfx::vulkan::Context> context) 
   : m_context(context) {
 
@@ -49,7 +148,7 @@ core::ref<Mesh> Model::processMesh(aiMesh *mesh, const aiScene *scene, aiMatrix4
     vertices.reserve(mesh->mNumVertices);
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex;
-
+        
         vertex.position.x = mesh->mVertices[i].x;
         vertex.position.y = mesh->mVertices[i].y;
         vertex.position.z = mesh->mVertices[i].z;
@@ -117,7 +216,7 @@ core::ref<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiText
         auto img = gfx::vulkan::Image::Builder{}
             .build2D(m_context, 1, 1, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        auto stagingBuffer = gfx::vulkan::Buffer::Builder{} 
+        auto stagingBuffer = gfx::vulkan::buffer_builder_t{} 
             .build(m_context, 4 * sizeof(uint8_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         auto map = stagingBuffer->map();
         uint8_t data[4] = {255, 255, 255, 255};

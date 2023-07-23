@@ -19,3 +19,6 @@
 [submodule "deps/screen_capture_lite"]
 	path = deps/screen_capture_lite
 	url = https://github.com/smasherprog/screen_capture_lite.git
+[submodule "deps/imgui/imgui"]
+	path = deps/imgui/imgui
+	url = https://github.com/ocornut/imgui.git

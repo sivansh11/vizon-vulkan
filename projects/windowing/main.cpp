@@ -93,15 +93,15 @@ int main(int argc, char **argv) {
         .addAttachmentView(imageDepth->imageView())
         .build(context, renderpass->renderPass(), width, height);
     
-    std::vector<std::shared_ptr<gfx::vulkan::Buffer>> globalUniformBufferObject;
+    std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> globalUniformBufferObject;
     std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> globalUniformBufferDescriptorSet;
     for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
         globalUniformBufferDescriptorSet.push_back(gfx::vulkan::DescriptorSet::Builder{}
             .build(context, globalDescriptorSetLayout));
-        globalUniformBufferObject.push_back(gfx::vulkan::Buffer::Builder{}
+        globalUniformBufferObject.push_back(gfx::vulkan::buffer_builder_t{}
             .build(context, sizeof(GlobalUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
         globalUniformBufferDescriptorSet[i]->write()
-            .pushBufferInfo(0, 1, globalUniformBufferObject[i]->descriptorInfo())
+            .pushBufferInfo(0, 1, globalUniformBufferObject[i]->descriptor_info())
             .update();
     }
 
@@ -156,14 +156,14 @@ int main(int argc, char **argv) {
             .update();
         mesh->material = mat;
         auto& descriptor = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>>>(ent);
-        auto& buffer = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::Buffer>>>(ent);
+        auto& buffer = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::buffer_t>>>(ent);
         for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
             descriptor.push_back(gfx::vulkan::DescriptorSet::Builder{}
                 .build(context, perObjectDescriptorSetLayout));
-            buffer.push_back(gfx::vulkan::Buffer::Builder{}
+            buffer.push_back(gfx::vulkan::buffer_builder_t{}
                 .build(context, sizeof(PerObjectUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
             descriptor[i]->write()
-                .pushBufferInfo(0, 1, buffer[i]->descriptorInfo())
+                .pushBufferInfo(0, 1, buffer[i]->descriptor_info())
                 .update();
         }
     }
@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
             for (auto [ent, mesh, transform, descriptor, buffer] : scene.view<std::shared_ptr<core::Mesh>, 
                                                                               core::Transform,
                                                                               std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>>, 
-                                                                              std::vector<std::shared_ptr<gfx::vulkan::Buffer>>>().each()) {
+                                                                              std::vector<std::shared_ptr<gfx::vulkan::buffer_t>>>().each()) {
                 PerObjectUniformBufferStruct perObjectUniformBuffer{};
                 perObjectUniformBuffer.model = transform.mat4();
                 perObjectUniformBuffer.invModel = glm::inverse(perObjectUniformBuffer.model);

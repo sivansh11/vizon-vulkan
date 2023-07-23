@@ -56,9 +56,12 @@ core::ref<Image> Image::Builder::build2D(core::ref<Context> context, uint32_t wi
     imageCreateInfo.extent.width = width;
     imageCreateInfo.extent.height = height;
     imageCreateInfo.extent.depth = 1;
-    if (enableMipMaps) 
+    if (enableMipMaps) {
+        VkImageFormatProperties imageFormatProperties{};
+        vkGetPhysicalDeviceImageFormatProperties(context->physicalDevice(), VK_FORMAT_R8G8B8A8_SRGB, VkImageType::VK_IMAGE_TYPE_2D, VkImageTiling::VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
         imageCreateInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-    else    
+        imageCreateInfo.mipLevels = std::min(imageFormatProperties.maxMipLevels, imageCreateInfo.mipLevels);
+    } else    
         imageCreateInfo.mipLevels = 1;  
     imageCreateInfo.arrayLayers = 1; // ???
     imageCreateInfo.format = format;
@@ -166,7 +169,7 @@ core::ref<Image> Image::Builder::loadFromPath(core::ref<Context> context, const 
         std::terminate();
     }
 
-    auto stagingBuffer = Buffer::Builder{}
+    auto stagingBuffer = buffer_builder_t{}
         .build(context, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     auto map = stagingBuffer->map();
@@ -432,7 +435,7 @@ void Image::genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout) {
     m_context->endSingleUseCommandBuffer(commandBuffer);
 }
 
-void Image::copyBufferToImage(core::ref<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
+void Image::copyBufferToImage(core::ref<Context> context, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
     auto commandBuffer = context->startSingleUseCommandBuffer();
 
     copyBufferToImage(commandBuffer, buffer, image, bufferImageCopy);
@@ -440,7 +443,7 @@ void Image::copyBufferToImage(core::ref<Context> context, Buffer& buffer, Image&
     context->endSingleUseCommandBuffer(commandBuffer);
 }
 
-void Image::copyBufferToImage(VkCommandBuffer commandBuffer, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
+void Image::copyBufferToImage(VkCommandBuffer commandBuffer, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
     vkCmdCopyBufferToImage(commandBuffer, buffer.buffer(), image.image(), image.m_imageInfo.currentLayout, 1, &bufferImageCopy);
 }
 

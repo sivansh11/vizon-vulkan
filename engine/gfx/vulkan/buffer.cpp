@@ -6,7 +6,7 @@ namespace gfx {
 
 namespace vulkan {
 
-core::ref<Buffer> Buffer::Builder::build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
+core::ref<buffer_t> buffer_builder_t::build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferCreateInfo.size = size;
@@ -33,6 +33,7 @@ core::ref<Buffer> Buffer::Builder::build(core::ref<Context> context, VkDeviceSiz
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryAllocateInfo.allocationSize = memoryRequirements.size;
     memoryAllocateInfo.memoryTypeIndex = context->findMemoryType(memoryRequirements.memoryTypeBits, memoryTypeIndex);
+    if (false)  // TODO: come back to this
     memoryAllocateInfo.pNext = &memoryAllocateFlagsInfo;
 
     VkDeviceMemory deviceMemory;
@@ -43,23 +44,23 @@ core::ref<Buffer> Buffer::Builder::build(core::ref<Context> context, VkDeviceSiz
 
     vkBindBufferMemory(context->device(), buffer, deviceMemory, 0);
 
-    return core::make_ref<Buffer>(context, buffer, deviceMemory);
+    return core::make_ref<buffer_t>(context, buffer, deviceMemory);
 }
 
-Buffer::Buffer(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory) 
+buffer_t::buffer_t(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory) 
   : m_context(context),
     m_buffer(buffer),
     m_deviceMemory(deviceMemory) {
     TRACE("Created buffer");
 }
 
-Buffer::~Buffer() {
+buffer_t::~buffer_t() {
     vkDestroyBuffer(m_context->device(), m_buffer, nullptr);
     vkFreeMemory(m_context->device(), m_deviceMemory, nullptr);
     TRACE("Destoryed buffer");
 }
 
-void Buffer::invalidate(VkDeviceSize offset, VkDeviceSize size) {
+void buffer_t::invalidate(VkDeviceSize offset, VkDeviceSize size) {
     VkMappedMemoryRange mappedMemoryRange{};
     mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     mappedMemoryRange.memory = m_deviceMemory;
@@ -68,7 +69,7 @@ void Buffer::invalidate(VkDeviceSize offset, VkDeviceSize size) {
     vkInvalidateMappedMemoryRanges(m_context->device(), 1, &mappedMemoryRange);
 }
 
-void Buffer::flush(VkDeviceSize offset, VkDeviceSize size) {
+void buffer_t::flush(VkDeviceSize offset, VkDeviceSize size) {
     VkMappedMemoryRange mappedMemoryRange{};
     mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     mappedMemoryRange.memory = m_deviceMemory;
@@ -77,18 +78,18 @@ void Buffer::flush(VkDeviceSize offset, VkDeviceSize size) {
     vkFlushMappedMemoryRanges(m_context->device(), 1, &mappedMemoryRange);
 }
 
-void *Buffer::map(VkDeviceSize offset, VkDeviceSize size) {
+void *buffer_t::map(VkDeviceSize offset, VkDeviceSize size) {
     if (m_mapped) return m_mapped;
     vkMapMemory(m_context->device(), m_deviceMemory, offset, size, 0, &m_mapped);
     return m_mapped;
 }
 
-void Buffer::unmap() {
+void buffer_t::unmap() {
     if (!m_mapped) return;
     vkUnmapMemory(m_context->device(), m_deviceMemory);
 }
 
-void Buffer::copy(core::ref<Context> context, Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy) {
+void buffer_t::copy(core::ref<Context> context, buffer_t& srcBuffer, buffer_t& dstBuffer, const VkBufferCopy& bufferCopy) {
     VkCommandBuffer commandBuffer = context->startSingleUseCommandBuffer();
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer.buffer(), dstBuffer.buffer(), 1, &bufferCopy);

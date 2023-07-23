@@ -1,5 +1,6 @@
 #include "context.hpp"
 
+#include "core/core.hpp"
 #include "core/log.hpp"
 
 #include <set>
@@ -12,6 +13,7 @@ namespace vulkan {
 static bool isVolkInitialized = false;
 
 static void initializeVolk() {
+    VIZON_PROFILE_FUNCTION();
     if (volkInitialize() != VK_SUCCESS) {
         ERROR("Failed to initialize Volk");
         std::terminate();
@@ -23,6 +25,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
+    VIZON_PROFILE_FUNCTION();
     switch (messageSeverity) {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: 
             TRACE("{}", pCallbackData->pMessage);
@@ -40,10 +43,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-Context::Context(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation)
+Context::Context(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation, bool enableRaytracing)
   : MAX_FRAMES_IN_FLIGHT(MAX_FRAMES_IN_FLIGHT),
     window(window),
-    m_validation(validation) {
+    m_validation(validation),
+    m_raytracing(enableRaytracing) {
+    VIZON_PROFILE_FUNCTION();
     if (!isVolkInitialized) {
         isVolkInitialized = true;
         initializeVolk();
@@ -136,6 +141,7 @@ Context::~Context() {
 }
 
 std::optional<std::pair<VkCommandBuffer, uint32_t>> Context::startFrame() {
+    VIZON_PROFILE_FUNCTION();
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
     
     auto result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
@@ -158,6 +164,7 @@ std::optional<std::pair<VkCommandBuffer, uint32_t>> Context::startFrame() {
 }
 
 bool Context::endFrame(VkCommandBuffer commandBuffer) {
+    VIZON_PROFILE_FUNCTION();
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         ERROR("Failed to record command buffer");
         std::terminate();
@@ -207,6 +214,7 @@ bool Context::endFrame(VkCommandBuffer commandBuffer) {
 }
 
 void Context::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, const VkClearValue& clearValue) {
+    VIZON_PROFILE_FUNCTION();
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.framebuffer = m_swapChainFramebuffers[m_imageIndex];
@@ -219,10 +227,12 @@ void Context::beginSwapChainRenderPass(VkCommandBuffer commandBuffer, const VkCl
 }
 
 void Context::endSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+    VIZON_PROFILE_FUNCTION();
     vkCmdEndRenderPass(commandBuffer);
 }
 
 VkCommandBuffer Context::startSingleUseCommandBuffer() {
+    VIZON_PROFILE_FUNCTION();
     VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     commandBufferAllocateInfo.commandPool = m_commandPool;
@@ -243,6 +253,7 @@ VkCommandBuffer Context::startSingleUseCommandBuffer() {
 }
 
 void Context::endSingleUseCommandBuffer(VkCommandBuffer commandBuffer) {
+    VIZON_PROFILE_FUNCTION();
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo{};
@@ -257,12 +268,14 @@ void Context::endSingleUseCommandBuffer(VkCommandBuffer commandBuffer) {
 }
 
 void Context::singleUseCommandBuffer(std::function<void(VkCommandBuffer)> fn) {
+    VIZON_PROFILE_FUNCTION();
     auto commandBuffer = startSingleUseCommandBuffer();
     fn(commandBuffer);
     endSingleUseCommandBuffer(commandBuffer);
 }
 
 uint32_t Context::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VIZON_PROFILE_FUNCTION();
     VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties{};
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &physicalDeviceMemoryProperties);
 
@@ -276,6 +289,7 @@ uint32_t Context::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags prop
 }
 
 bool Context::checkInstanceValidationLayerSupport() {
+    VIZON_PROFILE_FUNCTION();
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
     std::vector<VkLayerProperties> layers(layerCount);
@@ -290,24 +304,28 @@ bool Context::checkInstanceValidationLayerSupport() {
 }   
 
 void Context::pushInstanceValidationLayers() {
+    VIZON_PROFILE_FUNCTION();
     m_instanceLayers.push_back("VK_LAYER_KHRONOS_validation");   
 }
 
 void Context::pushInstanceDebugUtilsMessengerExtension() {
+    VIZON_PROFILE_FUNCTION();
     m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }
 
 void Context::pushRequiredInstanceExtensions() {
+    VIZON_PROFILE_FUNCTION();
     uint32_t glfwExtensionCount = 0;
     const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     for (uint32_t i = 0; i < glfwExtensionCount; i++) {
         m_instanceExtensions.push_back(glfwExtensions[i]);
     }
-    m_instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
+    // m_instanceExtensions.push_back("VK_KHR_get_physical_device_properties2");
 }
 
 VkDebugUtilsMessengerCreateInfoEXT Context::getDebugUtilsMessengerCreateInfo() {
+    VIZON_PROFILE_FUNCTION();
     VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo{};
     debugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     debugUtilsMessengerCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT    |
@@ -323,6 +341,7 @@ VkDebugUtilsMessengerCreateInfoEXT Context::getDebugUtilsMessengerCreateInfo() {
 }
 
 void Context::setupDebugMessenger() {
+    VIZON_PROFILE_FUNCTION();
     auto debugMessengerCreateInfo = getDebugUtilsMessengerCreateInfo();
 
     auto result = vkCreateDebugUtilsMessengerEXT(m_instance, &debugMessengerCreateInfo, nullptr, &m_debugUtilsMessenger);
@@ -334,6 +353,7 @@ void Context::setupDebugMessenger() {
 }
 
 void Context::createSurface() {
+    VIZON_PROFILE_FUNCTION();
     auto result = glfwCreateWindowSurface(m_instance, window->getWindow(), nullptr, &m_surface);
     if (result != VK_SUCCESS) {
         ERROR("Failed to create surface");
@@ -343,16 +363,20 @@ void Context::createSurface() {
 }
 
 void Context::pushRequiredDeviceExtensions() {
+    VIZON_PROFILE_FUNCTION();
     m_deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-    m_deviceExtensions.push_back("VK_EXT_descriptor_indexing");
-    m_deviceExtensions.push_back(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-    m_deviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    if (m_raytracing) {
+        m_deviceExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        m_deviceExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        m_deviceExtensions.push_back("VK_EXT_descriptor_indexing");
+        m_deviceExtensions.push_back(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
+        m_deviceExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        m_deviceExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    }
 }
 
 Context::QueueFamilyIndices Context::findQueueFamilies(VkPhysicalDevice physicalDevice) {
+    VIZON_PROFILE_FUNCTION();
     QueueFamilyIndices queueFamilyIndices{};
 
     uint32_t queueFamilyCount = 0;
@@ -382,6 +406,7 @@ Context::QueueFamilyIndices Context::findQueueFamilies(VkPhysicalDevice physical
 }
 
 bool Context::isDeviceExtensionSupported(VkPhysicalDevice physicalDevice) {
+    VIZON_PROFILE_FUNCTION();
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
@@ -396,6 +421,7 @@ bool Context::isDeviceExtensionSupported(VkPhysicalDevice physicalDevice) {
 }
 
 Context::SwapChainSupportDetails Context::querySwapChainSupport(VkPhysicalDevice physicalDevice) {
+    VIZON_PROFILE_FUNCTION();
     SwapChainSupportDetails swapChainSupportDetails{};
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_surface, &swapChainSupportDetails.capabilities);
@@ -418,6 +444,7 @@ Context::SwapChainSupportDetails Context::querySwapChainSupport(VkPhysicalDevice
 }
 
 bool Context::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice) {
+    VIZON_PROFILE_FUNCTION();
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
@@ -439,6 +466,7 @@ bool Context::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice) {
 }
 
 void Context::pickPhysicalDevice() {
+    VIZON_PROFILE_FUNCTION();
     pushRequiredDeviceExtensions();
 
     uint32_t deviceCount;
@@ -485,10 +513,12 @@ void Context::pickPhysicalDevice() {
 }
 
 void Context::pushDeviceValidationLayers() {
+    VIZON_PROFILE_FUNCTION();
     m_deviceLayers.push_back("VK_LAYER_KHRONOS_validation"); 
 }
 
 void Context::createLogicalDevice() {
+    VIZON_PROFILE_FUNCTION();
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> deviceQueueCreateInfos{};
@@ -542,7 +572,8 @@ void Context::createLogicalDevice() {
     deviceCreateInfo.queueCreateInfoCount = deviceQueueCreateInfos.size();
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
     deviceCreateInfo.enabledExtensionCount = 0;
-    deviceCreateInfo.pNext = &physicalDeviceRayTracingPipelineFeatures;
+    if (m_raytracing)
+        deviceCreateInfo.pNext = &physicalDeviceRayTracingPipelineFeatures;
 
     if (m_validation) 
         pushDeviceValidationLayers();
@@ -566,8 +597,9 @@ void Context::createLogicalDevice() {
 }
 
 VkSurfaceFormatKHR Context::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+    VIZON_PROFILE_FUNCTION();
     for (auto availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             return availableFormat;
         }
     }
@@ -575,6 +607,7 @@ VkSurfaceFormatKHR Context::chooseSwapSurfaceFormat(const std::vector<VkSurfaceF
 }
 
 VkPresentModeKHR Context::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+    VIZON_PROFILE_FUNCTION();
     for (auto availablePresentMode : availablePresentModes) {
         if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
             return availablePresentMode;
@@ -584,6 +617,7 @@ VkPresentModeKHR Context::chooseSwapPresentMode(const std::vector<VkPresentModeK
 }
 
 VkExtent2D Context::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+    VIZON_PROFILE_FUNCTION();
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
@@ -603,7 +637,7 @@ VkExtent2D Context::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilitie
 }
 
 void Context::createSwapChain() {
-
+    VIZON_PROFILE_FUNCTION();
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_physicalDevice);
 
     auto surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -683,6 +717,7 @@ void Context::createSwapChain() {
 }
 
 void Context::createRenderPass() {
+    VIZON_PROFILE_FUNCTION();
     VkAttachmentDescription colorAttachment{};
 	colorAttachment.format = m_swapChainFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -721,6 +756,7 @@ void Context::createRenderPass() {
 }
 
 void Context::createFramebuffers() {
+    VIZON_PROFILE_FUNCTION();
     m_swapChainFramebuffers.resize(m_swapChainImages.size());
     for (size_t i = 0; i < m_swapChainImages.size(); i++) {
         VkImageView attachments[] = {
@@ -744,6 +780,7 @@ void Context::createFramebuffers() {
 }
 
 void Context::createCommandPool() {
+    VIZON_PROFILE_FUNCTION();
     auto queueFamilyIndices = findQueueFamilies(m_physicalDevice);
     VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -756,6 +793,7 @@ void Context::createCommandPool() {
 }
 
 void Context::allocateCommandBuffers() {
+    VIZON_PROFILE_FUNCTION();
     VkCommandBufferAllocateInfo commandbufferAllocateInfo{};
     commandbufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     commandbufferAllocateInfo.commandPool = m_commandPool;
@@ -771,6 +809,7 @@ void Context::allocateCommandBuffers() {
 }
 
 void Context::createSyncObjects() {
+    VIZON_PROFILE_FUNCTION();
     m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -801,6 +840,7 @@ void Context::createSyncObjects() {
 }
 
 void Context::createDescriptorPool() {
+    VIZON_PROFILE_FUNCTION();
     std::vector<VkDescriptorPoolSize> poolSizes{};
 
     {
@@ -859,6 +899,7 @@ void Context::createDescriptorPool() {
 }
 
 void Context::recreateSwapChainAndItsResources() {
+    VIZON_PROFILE_FUNCTION();
     int width, height;
     glfwGetFramebufferSize(window->getWindow(), &width, &height);
     if (width == 0 || height == 0) {

@@ -15,6 +15,8 @@
 #include <glm/glm.hpp>
 #include <entt/entt.hpp>
 
+#include <vector>
+
 namespace core {
 
 struct Vertex {
@@ -36,8 +38,8 @@ public:
 
     friend class Model;
 private:
-    core::ref<gfx::vulkan::Buffer> m_vertices;
-    core::ref<gfx::vulkan::Buffer> m_indices;
+    core::ref<gfx::vulkan::buffer_t> m_vertices;
+    core::ref<gfx::vulkan::buffer_t> m_indices;
     uint32_t m_indexCount;
     uint32_t m_vertexCount;
     core::Transform m_transform;

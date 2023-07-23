@@ -16,9 +16,14 @@ if(!X11_Xfixes_LIB)
     message(FATAL_ERROR "X11 fixes extension is required, but not found!")
 endif()
 
+target_compile_definitions(engine PUBLIC
+    VIZON_PROFILE_ENABLE
+)
+
 include_directories(engine
     Vulkan::Headers
     ../deps
+    ../deps/imgui
     .
 )
 
@@ -31,6 +36,7 @@ target_link_libraries(engine
     EnTT
     assimp
     screen_capture_lite_static
+    imgui
     ${X11_LIBRARIES}
     ${X11_Xfixes_LIB}
     # ${X11_XTest_LIB}

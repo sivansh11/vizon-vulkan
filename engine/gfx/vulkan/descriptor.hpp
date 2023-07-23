@@ -8,6 +8,8 @@ namespace gfx {
 
 namespace vulkan {
 
+class DescriptorSet;
+
 class DescriptorSetLayout {
 public:
     struct Builder {
@@ -20,6 +22,8 @@ public:
 
     DescriptorSetLayout(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout);
     ~DescriptorSetLayout();
+
+    core::ref<DescriptorSet> newDescriptorSet();
 
     VkDescriptorSetLayout& descriptorSetLayout() { return m_descriptorSetLayout; } 
 
@@ -35,6 +39,7 @@ class DescriptorSet {
 public:
     struct Builder {
         core::ref<DescriptorSet> build(core::ref<Context> context, core::ref<DescriptorSetLayout> descriptorSetLayout);
+        core::ref<DescriptorSet> build(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout);
     };
 
     DescriptorSet(core::ref<Context> context, VkDescriptorSet descriptorSet);

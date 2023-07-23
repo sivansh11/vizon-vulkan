@@ -23,7 +23,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
 		depthDescriptorSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
 			.build(context, depthDescriptorSetLayout0));
-		depthSet0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+		depthSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(DepthSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		depthSet0UniformBufferMap.push_back(depthSet0UniformBuffer[i]->map());
 
@@ -75,11 +75,11 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.build(context);
 
 	for (uint32_t i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-		set0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+		set0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(Set0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		set0UniformBufferMap.push_back(set0UniformBuffer[i]->map());
 
-		set1UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+		set1UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(Set1UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		set1UniformBufferMap.push_back(set1UniformBuffer[i]->map());
 
@@ -202,7 +202,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
 		shadowDescriptorSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
 			.build(context, shadowDescriptorSetLayout0));
-		shadowSet0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+		shadowSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(ShadowSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		shadowSet0UniformBufferMap.push_back(shadowSet0UniformBuffer[i]->map());	
 		shadowDescriptorSet0[i]->write()
@@ -289,7 +289,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		ssaoSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
 			.build(context, ssaoDescriptorSetLayout0));
 		
-		ssaoSet0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+		ssaoSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(SsaoSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		
 		ssaoSet0UniformBufferMap.push_back(ssaoSet0UniformBuffer[i]->map());
@@ -350,7 +350,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		compositeSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
 			.build(context, compositeSetLayout0));
 		
-		compositeSet0UniformBuffer.push_back(gfx::vulkan::Buffer::Builder{}
+		compositeSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(CompositeSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		
 		compositeSet0UniformBufferMap.push_back(compositeSet0UniformBuffer[i]->map());

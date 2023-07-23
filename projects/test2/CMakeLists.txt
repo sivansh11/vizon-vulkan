@@ -14,6 +14,7 @@ add_executable(test2 ${SRC_FILES})
 include_directories(test2
     ../../engine
     .
+    ../../deps/imgui
 )
 
 target_link_libraries(test2

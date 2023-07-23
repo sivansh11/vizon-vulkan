@@ -60,8 +60,8 @@ public:
     void genMipMaps(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
     void genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout);
 
-    static void copyBufferToImage(core::ref<Context> context, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
-    static void copyBufferToImage(VkCommandBuffer commandBuffer, Buffer& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
+    static void copyBufferToImage(core::ref<Context> context, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
+    static void copyBufferToImage(VkCommandBuffer commandBuffer, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
 
     void *map(VkDeviceSize poffset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     void unmap();

@@ -11,27 +11,27 @@ Mesh::Mesh(core::ref<gfx::vulkan::Context> context, const std::vector<Vertex>& v
     m_vertexCount = vertices.size();
     m_indexCount = indices.size();
 
-    m_vertices = gfx::vulkan::Buffer::Builder{}
+    m_vertices = gfx::vulkan::buffer_builder_t{}
         .build(context, vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    core::ref<gfx::vulkan::Buffer> stagingBuffer = gfx::vulkan::Buffer::Builder{}
+    core::ref<gfx::vulkan::buffer_t> stagingBuffer = gfx::vulkan::buffer_builder_t{}
         .build(context, vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     auto map = stagingBuffer->map();
     std::memcpy(map, vertices.data(), vertices.size() * sizeof(vertices[0]));
     stagingBuffer->unmap();
 
-    gfx::vulkan::Buffer::copy(context, *stagingBuffer, *m_vertices, VkBufferCopy{
+    gfx::vulkan::buffer_t::copy(context, *stagingBuffer, *m_vertices, VkBufferCopy{
         .size = vertices.size() * sizeof(vertices[0]),
     });
 
-    m_indices = gfx::vulkan::Buffer::Builder{}
+    m_indices = gfx::vulkan::buffer_builder_t{}
         .build(context, indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    stagingBuffer = gfx::vulkan::Buffer::Builder{}
+    stagingBuffer = gfx::vulkan::buffer_builder_t{}
         .build(context, indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     map = stagingBuffer->map();
     std::memcpy(map, indices.data(), indices.size() * sizeof(indices[0]));
     stagingBuffer->unmap();
 
-    gfx::vulkan::Buffer::copy(context, *stagingBuffer, *m_indices, VkBufferCopy{
+    gfx::vulkan::buffer_t::copy(context, *stagingBuffer, *m_indices, VkBufferCopy{
         .size = indices.size() * sizeof(indices[0]),
     });
 }   

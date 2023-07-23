@@ -3,14 +3,14 @@
 
 #include "core/core.hpp"
 
+#define VK_NO_PROTOTYPES
+#include <volk.h>
+
 #define GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_NONE
-#define VK_NO_PROTOTYPES
 #include <GLFW/glfw3.h>
 
 #include "core/window.hpp"
-
-#include <volk.h>
 
 #include <memory>
 #include <vector>
@@ -45,7 +45,7 @@ public:
         std::vector<VkPresentModeKHR> presentModes;
     };
 
-    Context(core::ref<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation);
+    Context(core::ref<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation, bool enableRaytracing = false);
     ~Context();
 
     std::optional<std::pair<VkCommandBuffer, uint32_t>> startFrame();
@@ -60,8 +60,12 @@ public:
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
+    VkInstance& instance() { return m_instance; }
+    VkPhysicalDevice& physicalDevice() { return m_physicalDevice; }
     VkDevice& device() { return m_device; }
     VkSwapchainKHR& swapChain() { return m_swapChain; }
+
+    QueueFamilyIndices queueFamilyIndices() { return findQueueFamilies(m_physicalDevice); }
 
     VkFormat& swapChainFormat() { return m_swapChainFormat; }
     VkExtent2D& swapChainExtent() { return m_swapChainExtent; }
@@ -71,6 +75,8 @@ public:
     
     VkRenderPass& swapChainRenderPass() { return m_swapChainRenderPass; }
 
+    uint32_t swapChainImageCount() { return m_swapChainImages.size(); }
+ 
     uint32_t& currentFrame() { return m_currentFrame; }
 
     VkPhysicalDeviceProperties& physicalDeviceProperties() { return m_physicalDeviceProperties; }
@@ -79,7 +85,11 @@ public:
     std::vector<VkImageView>& swapChainImageViews() { return m_swapChainImageViews; }
     std::vector<VkFramebuffer>& swapChainFramebuffers() { return m_swapChainFramebuffers; }
 
-    VkDescriptorPool descriptorPool() { return m_descriptorPool; }
+    VkDescriptorPool& descriptorPool() { return m_descriptorPool; }
+
+    void waitIdle() { 
+        vkDeviceWaitIdle(m_device);
+    }
     
     void addResizeCallBack(std::function<void()> resizeCallBack) {
         m_resizeCallBacks.push_back(resizeCallBack);
@@ -130,6 +140,7 @@ private:
     core::ref<core::Window> window;
 
     const bool m_validation;
+    const bool m_raytracing;
     VkPhysicalDeviceProperties m_physicalDeviceProperties{};
 
     std::vector<const char *> m_instanceLayers{};

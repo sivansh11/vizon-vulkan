@@ -9,16 +9,13 @@ namespace gfx {
 
 namespace vulkan {
 
-class Buffer {
+class buffer_t {
 public:
-    struct Builder {
-        core::ref<Buffer> build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
-    };  
 
-    Buffer(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory);
-    ~Buffer();
+    buffer_t(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory);
+    ~buffer_t();
 
-    VkDescriptorBufferInfo descriptorInfo(VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE) {
+    VkDescriptorBufferInfo descriptor_info(VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE) {
         return VkDescriptorBufferInfo{
             .buffer = buffer(),
             .offset = offset,
@@ -33,10 +30,10 @@ public:
     void flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     
-    static void copy(core::ref<Context> context, Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy);
+    static void copy(core::ref<Context> context, buffer_t& srcBuffer, buffer_t& dstBuffer, const VkBufferCopy& bufferCopy);
 
     VkBuffer& buffer() { return m_buffer; }
-    VkDeviceMemory& deviceMemory() { return m_deviceMemory; }
+    VkDeviceMemory& device_memory() { return m_deviceMemory; }
 
 private:
     void *m_mapped{nullptr};
@@ -44,6 +41,10 @@ private:
     VkBuffer m_buffer;
     VkDeviceMemory m_deviceMemory;
 };
+
+struct buffer_builder_t {
+    core::ref<buffer_t> build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
+};  
 
 } // namespace vulkan
 

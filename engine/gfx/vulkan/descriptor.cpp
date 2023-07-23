@@ -44,12 +44,35 @@ DescriptorSetLayout::~DescriptorSetLayout() {
     TRACE("Destroyed descriptor set layout");
 }
 
+core::ref<DescriptorSet> DescriptorSetLayout::newDescriptorSet() {
+    return DescriptorSet::Builder{}
+        .build(m_context, m_descriptorSetLayout);
+}
+
+
 core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> context, core::ref<DescriptorSetLayout> descriptorSetLayout) {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.descriptorPool = context->descriptorPool();
     descriptorSetAllocateInfo.descriptorSetCount = 1;
     VkDescriptorSetLayout p_descriptorSetLayout[] = { descriptorSetLayout->descriptorSetLayout() }; 
+    descriptorSetAllocateInfo.pSetLayouts = p_descriptorSetLayout;
+
+    VkDescriptorSet descriptorSet;
+
+    if (vkAllocateDescriptorSets(context->device(), &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
+        ERROR("Failed to allocate descriptor set");
+        std::terminate();
+    }
+    return core::make_ref<DescriptorSet>(context, descriptorSet);
+}
+
+core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout) {
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocateInfo.descriptorPool = context->descriptorPool();
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    VkDescriptorSetLayout p_descriptorSetLayout[] = { descriptorSetLayout }; 
     descriptorSetAllocateInfo.pSetLayouts = p_descriptorSetLayout;
 
     VkDescriptorSet descriptorSet;
