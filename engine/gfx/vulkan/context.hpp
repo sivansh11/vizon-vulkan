@@ -140,8 +140,9 @@ private:
 private:
     core::ref<core::Window> _window;
 
-    const bool _validation;
+    friend class buffer_builder_t;
     const bool _raytracing;
+    const bool _validation;
     VkPhysicalDeviceProperties _physical_device_properties{};
 
     std::vector<const char *> _instance_layers{};

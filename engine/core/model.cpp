@@ -56,7 +56,7 @@ mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, cons
 
         if (mesh->HasTangentsAndBitangents()) {
             vertex.tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
-            vertex.biTangent = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
+            vertex.bi_tangent = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
         } else {
 
         }
@@ -197,7 +197,7 @@ core::ref<Material> Model::processMaterial(aiMaterial *material) {
 
     core::ref<Material> mat = core::make_ref<Material>();
 
-    mat->descriptorSet = gfx::vulkan::descriptor_set_builder_t{}
+    mat->descriptor_set = gfx::vulkan::descriptor_set_builder_t{}
         .build(m_context, Material::getMaterialDescriptorSetLayout());
     
     // load all the textures and parameters
@@ -211,9 +211,9 @@ core::ref<Material> Model::processMaterial(aiMaterial *material) {
 }
 
 
-core::ref<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiTextureType type, std::string typeName) {
+core::ref<gfx::vulkan::image_t> Model::loadMaterialTexture(aiMaterial *mat, aiTextureType type, std::string typeName) {
     if (mat->GetTextureCount(type) == 0) {
-        auto img = gfx::vulkan::Image::Builder{}
+        auto img = gfx::vulkan::image_builder_t{}
             .build2D(m_context, 1, 1, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         auto stagingBuffer = gfx::vulkan::buffer_builder_t{} 
@@ -223,8 +223,8 @@ core::ref<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiText
         std::memcpy(map, data, sizeof(uint8_t) * 4);
         stagingBuffer->unmap();
 
-        img->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        gfx::vulkan::Image::copyBufferToImage(m_context, *stagingBuffer, *img, VkBufferImageCopy{
+        img->transition_layout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        gfx::vulkan::image_t::copy_buffer_to_image(m_context, *stagingBuffer, *img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkBufferImageCopy{
             .bufferOffset = 0,
             .bufferRowLength = 0,
             .bufferImageHeight = 0,
@@ -238,12 +238,12 @@ core::ref<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiText
             .imageExtent = {static_cast<uint32_t>(1), static_cast<uint32_t>(1), 1}
         });
 
-        img->transitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        img->transition_layout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         return img;
     }
     if (mat->GetTextureCount(type) == 0) return nullptr;
 
-    core::ref<gfx::vulkan::Image> img;
+    core::ref<gfx::vulkan::image_t> img;
     for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
         aiString str;
         mat->GetTexture(type, i, &str);
@@ -253,10 +253,10 @@ core::ref<gfx::vulkan::Image> Model::loadMaterialTexture(aiMaterial *mat, aiText
         std::string filePath = m_directory.string() + '/' + str.C_Str();
         std::replace(filePath.begin(), filePath.end(), '\\', '/');
         if (type == aiTextureType_DIFFUSE)
-            img = gfx::vulkan::Image::Builder{}
+            img = gfx::vulkan::image_builder_t{}
                 .loadFromPath(m_context, filePath);
         else 
-            img = gfx::vulkan::Image::Builder{}
+            img = gfx::vulkan::image_builder_t{}
                 .loadFromPath(m_context, filePath, VK_FORMAT_R8G8B8A8_UNORM);
         
         // tex = core::make_ref<gfx::Texture>((m_directory + '/' + str.C_Str()).c_str());

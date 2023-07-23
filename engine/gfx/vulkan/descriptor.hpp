@@ -12,17 +12,17 @@ class descriptor_set_t;
 class descriptor_set_layout_t;
 
 struct descriptor_set_layout_builder_t {
-    descriptor_set_layout_builder_t& addLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, uint32_t count, VkShaderStageFlags shaderStageFlags);
+    descriptor_set_layout_builder_t& addLayoutBinding(uint32_t binding, VkDescriptorType descriptor_type, uint32_t count, VkShaderStageFlags shader_stage_flags);
     
     core::ref<descriptor_set_layout_t> build(core::ref<context_t> context);
 
-    std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings{};
+    std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layout_bindings{};
 };
 
 class descriptor_set_layout_t {
 public:
 
-    descriptor_set_layout_t(core::ref<context_t> context, VkDescriptorSetLayout descriptorSetLayout);
+    descriptor_set_layout_t(core::ref<context_t> context, VkDescriptorSetLayout descriptor_set_layout);
     ~descriptor_set_layout_t();
 
     core::ref<descriptor_set_t> new_descriptor_set();
@@ -38,38 +38,38 @@ private:
 };
 
 struct descriptor_set_builder_t {
-    core::ref<descriptor_set_t> build(core::ref<context_t> context, core::ref<descriptor_set_layout_t> descriptorSetLayout);
-    core::ref<descriptor_set_t> build(core::ref<context_t> context, VkDescriptorSetLayout descriptorSetLayout);
+    core::ref<descriptor_set_t> build(core::ref<context_t> context, core::ref<descriptor_set_layout_t> descriptor_set_layout);
+    core::ref<descriptor_set_t> build(core::ref<context_t> context, VkDescriptorSetLayout descriptor_set_layout);
 };
 
 class descriptor_set_t {
 public:
 
-    descriptor_set_t(core::ref<context_t> context, VkDescriptorSet descriptorSet);
+    descriptor_set_t(core::ref<context_t> context, VkDescriptorSet descriptor_set);
     ~descriptor_set_t();
 
     descriptor_set_t(const descriptor_set_t&) = delete;
     descriptor_set_t& operator=(const descriptor_set_t&) = delete;
 
-    VkDescriptorSet& descriptorSet() { return m_descriptorSet; }
+    VkDescriptorSet& descriptor_set() { return _descriptor_set; }
 
-    struct Write {
-        Write(core::ref<context_t> context, VkDescriptorSet descriptorSet);
-        Write& pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptorImageInfo);
-        Write& pushBufferInfo(uint32_t binding, uint32_t count, const VkDescriptorBufferInfo& descriptorBuffeInfo);
+    struct write_t {
+        write_t(core::ref<context_t> context, VkDescriptorSet descriptor_set);
+        write_t& pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptor_image_info);
+        write_t& pushBufferInfo(uint32_t binding, uint32_t count, const VkDescriptorBufferInfo& descriptor_buffer_info);
 
         void update();
 
         std::vector<VkWriteDescriptorSet> writes;
         core::ref<context_t> context;
-        VkDescriptorSet descriptorSet{};
+        VkDescriptorSet descriptor_set{};
     };    
 
-    Write& write();
+    write_t& write();
 
 private:
-    core::ref<context_t> m_context;
-    VkDescriptorSet m_descriptorSet{}; 
+    core::ref<context_t> _context;
+    VkDescriptorSet _descriptor_set{}; 
 };
 
 } // namespace vulkan

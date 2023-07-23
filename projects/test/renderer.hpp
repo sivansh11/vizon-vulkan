@@ -36,11 +36,11 @@ private:
     std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>> depthDescriptorSet0;
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> depthSet0UniformBuffer;
     std::vector<void *> depthSet0UniformBufferMap;
-    std::shared_ptr<gfx::vulkan::RenderPass> depthRenderPass;
-    std::shared_ptr<gfx::vulkan::Image> depthImage;
-    std::shared_ptr<gfx::vulkan::Framebuffer> depthFramebuffer;
-    std::shared_ptr<gfx::vulkan::Pipeline> depthPipeline;
-    std::shared_ptr<gfx::vulkan::Timer> depthTimer;
+    std::shared_ptr<gfx::vulkan::renderpass_t> depthRenderPass;
+    std::shared_ptr<gfx::vulkan::image_t> depthImage;
+    std::shared_ptr<gfx::vulkan::framebuffer_t> depthFramebuffer;
+    std::shared_ptr<gfx::vulkan::pipeline_t> depthPipeline;
+    std::shared_ptr<gfx::vulkan::gpu_timer_t> depthTimer;
 
     std::shared_ptr<gfx::vulkan::descriptor_set_layout_t> descriptorSetLayout0;
     std::shared_ptr<gfx::vulkan::descriptor_set_layout_t> descriptorSetLayout1;
@@ -50,49 +50,49 @@ private:
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> set1UniformBuffer;
     std::vector<void *> set0UniformBufferMap;
     std::vector<void *> set1UniformBufferMap;
-    std::shared_ptr<gfx::vulkan::RenderPass> deferredRenderPass;
-    std::shared_ptr<gfx::vulkan::Image> gBufferAlbedoSpecImage;
-    std::shared_ptr<gfx::vulkan::Image> gBufferNormalImage;
-    std::shared_ptr<gfx::vulkan::Image> gBufferDepthImage;
-    std::shared_ptr<gfx::vulkan::Framebuffer> gBufferFramebuffer;
-    std::shared_ptr<gfx::vulkan::Pipeline> deferredPipeline;
-    std::shared_ptr<gfx::vulkan::Timer> deferredTimer;  
+    std::shared_ptr<gfx::vulkan::renderpass_t> deferredRenderPass;
+    std::shared_ptr<gfx::vulkan::image_t> gBufferAlbedoSpecImage;
+    std::shared_ptr<gfx::vulkan::image_t> gBufferNormalImage;
+    std::shared_ptr<gfx::vulkan::image_t> gBufferDepthImage;
+    std::shared_ptr<gfx::vulkan::framebuffer_t> gBufferFramebuffer;
+    std::shared_ptr<gfx::vulkan::pipeline_t> deferredPipeline;
+    std::shared_ptr<gfx::vulkan::gpu_timer_t> deferredTimer;  
 
     std::shared_ptr<gfx::vulkan::descriptor_set_layout_t> shadowDescriptorSetLayout0;
     std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>> shadowDescriptorSet0;
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> shadowSet0UniformBuffer;
     std::vector<void *> shadowSet0UniformBufferMap;
-    std::shared_ptr<gfx::vulkan::RenderPass> shadowRenderPass;
-    std::shared_ptr<gfx::vulkan::Image> shadowMapImage;
-    std::shared_ptr<gfx::vulkan::Framebuffer> shadowFramebuffer;
-    std::shared_ptr<gfx::vulkan::Pipeline> shadowPipeline;
-    std::shared_ptr<gfx::vulkan::Timer> shadowTimer;  
+    std::shared_ptr<gfx::vulkan::renderpass_t> shadowRenderPass;
+    std::shared_ptr<gfx::vulkan::image_t> shadowMapImage;
+    std::shared_ptr<gfx::vulkan::framebuffer_t> shadowFramebuffer;
+    std::shared_ptr<gfx::vulkan::pipeline_t> shadowPipeline;
+    std::shared_ptr<gfx::vulkan::gpu_timer_t> shadowTimer;  
 
-    std::shared_ptr<gfx::vulkan::RenderPass> ssaoRenderPass;
+    std::shared_ptr<gfx::vulkan::renderpass_t> ssaoRenderPass;
     std::shared_ptr<gfx::vulkan::descriptor_set_layout_t> ssaoDescriptorSetLayout0;
-    std::shared_ptr<gfx::vulkan::Image> ssaoImage;
-    std::shared_ptr<gfx::vulkan::Image> noise;
-    std::shared_ptr<gfx::vulkan::Framebuffer> ssaoFramebuffer;
-    std::shared_ptr<gfx::vulkan::Pipeline> ssaoPipeline;
+    std::shared_ptr<gfx::vulkan::image_t> ssaoImage;
+    std::shared_ptr<gfx::vulkan::image_t> noise;
+    std::shared_ptr<gfx::vulkan::framebuffer_t> ssaoFramebuffer;
+    std::shared_ptr<gfx::vulkan::pipeline_t> ssaoPipeline;
     std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>> ssaoSet0;
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> ssaoSet0UniformBuffer;
     std::vector<void *> ssaoSet0UniformBufferMap;
-    std::shared_ptr<gfx::vulkan::Timer> ssaoTimer;  
+    std::shared_ptr<gfx::vulkan::gpu_timer_t> ssaoTimer;  
 
-    std::shared_ptr<gfx::vulkan::RenderPass> compositeRenderPass;
-    std::shared_ptr<gfx::vulkan::Image> compositeImage;
-    std::shared_ptr<gfx::vulkan::Framebuffer> compositeFramebuffer;
+    std::shared_ptr<gfx::vulkan::renderpass_t> compositeRenderPass;
+    std::shared_ptr<gfx::vulkan::image_t> compositeImage;
+    std::shared_ptr<gfx::vulkan::framebuffer_t> compositeFramebuffer;
     std::shared_ptr<gfx::vulkan::descriptor_set_layout_t> compositeSetLayout0;
-    std::shared_ptr<gfx::vulkan::Pipeline> compositePipeline;
+    std::shared_ptr<gfx::vulkan::pipeline_t> compositePipeline;
     std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>> compositeSet0;
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> compositeSet0UniformBuffer;
     std::vector<void *> compositeSet0UniformBufferMap;
-    std::shared_ptr<gfx::vulkan::Timer> compositeTimer;  
+    std::shared_ptr<gfx::vulkan::gpu_timer_t> compositeTimer;  
 
     std::shared_ptr<gfx::vulkan::descriptor_set_layout_t> swapChainPipelineDescriptorSetLayout;
     std::shared_ptr<gfx::vulkan::descriptor_set_t> swapChainPipelineDescriptorSet;
-    std::shared_ptr<gfx::vulkan::Pipeline> swapChainPipeline;
-    std::shared_ptr<gfx::vulkan::Timer> swapChainTimer;  
+    std::shared_ptr<gfx::vulkan::pipeline_t> swapChainPipeline;
+    std::shared_ptr<gfx::vulkan::gpu_timer_t> swapChainTimer;  
 
 };
 

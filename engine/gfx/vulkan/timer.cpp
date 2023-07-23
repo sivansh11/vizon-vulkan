@@ -6,42 +6,42 @@ namespace gfx {
 
 namespace vulkan {
 
-Timer::Timer(core::ref<context_t> context)
-  : m_context(context) {
-    VkQueryPoolCreateInfo queryPoolCreateInfo{};
-    queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    queryPoolCreateInfo.queryCount = 2;
-    queryPoolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+gpu_timer_t::gpu_timer_t(core::ref<context_t> context)
+  : _context(context) {
+    VkQueryPoolCreateInfo query_pool_create_info{};
+    query_pool_create_info.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    query_pool_create_info.queryCount = 2;
+    query_pool_create_info.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
-    if (vkCreateQueryPool(context->device(), &queryPoolCreateInfo, nullptr, &m_queryPool) != VK_SUCCESS) {
+    if (vkCreateQueryPool(context->device(), &query_pool_create_info, nullptr, &_queryPool) != VK_SUCCESS) {
         ERROR("Failed to create query pool");
         std::terminate();
     }
 }
 
-Timer::~Timer() {
-    vkDestroyQueryPool(m_context->device(), m_queryPool, nullptr);
+gpu_timer_t::~gpu_timer_t() {
+    vkDestroyQueryPool(_context->device(), _queryPool, nullptr);
 }
 
-void Timer::begin(VkCommandBuffer commandBuffer) {
-    vkCmdResetQueryPool(commandBuffer, m_queryPool, 0, 2);
-    vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_queryPool, 0);
+void gpu_timer_t::begin(VkCommandBuffer command_buffer) {
+    vkCmdResetQueryPool(command_buffer, _queryPool, 0, 2);
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, _queryPool, 0);
 }
 
-void Timer::end(VkCommandBuffer commandBuffer) {
-    vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, 1);
+void gpu_timer_t::end(VkCommandBuffer command_buffer) {
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _queryPool, 1);
 }
 
-std::optional<float> Timer::getTime() {
-    uint64_t timeStamps[2];
-    auto result = vkGetQueryPoolResults(m_context->device(), m_queryPool, 0, 2, sizeof(uint64_t) * 2, timeStamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
+std::optional<float> gpu_timer_t::getTime() {
+    uint64_t time_stamps[2];
+    auto result = vkGetQueryPoolResults(_context->device(), _queryPool, 0, 2, sizeof(uint64_t) * 2, time_stamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
     if (result == VK_NOT_READY) {
         return std::nullopt;
     } else if (result != VK_SUCCESS) {
         WARN("not successful time stamp");
         return std::nullopt;
     }
-    return ((timeStamps[1] - timeStamps[0]) * m_context->physical_device_properties().limits.timestampPeriod) / 1000000.f;
+    return ((time_stamps[1] - time_stamps[0]) * _context->physical_device_properties().limits.timestampPeriod) / 1000000.f;
 }
 
 } // namespace vulkan

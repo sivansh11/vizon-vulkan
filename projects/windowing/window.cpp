@@ -36,11 +36,11 @@ Window::Window(std::shared_ptr<gfx::vulkan::context_t> context, const std::strin
 		std::terminate();
 	}
 
-    m_image = gfx::vulkan::Image::Builder{}
-		.mipMaps()
-		.setTiling(VK_IMAGE_TILING_LINEAR)
+    m_image = gfx::vulkan::image_builder_t{}
+		.mip_maps()
+		.set_tiling(VK_IMAGE_TILING_LINEAR)
         .build2D(context, selectedWindow[0].Size.x, selectedWindow[0].Size.y, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	m_image->transitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	m_image->transition_layout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	map = m_image->map();
 
 	m_framegrabber = SL::Screen_Capture::CreateCaptureConfiguration([&]() { return this->selectedWindow; })

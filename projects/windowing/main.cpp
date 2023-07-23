@@ -45,8 +45,8 @@ int main(int argc, char **argv) {
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build(context);    
 
-    auto renderpass = gfx::vulkan::RenderPass::Builder{}
-        .addColorAttachment(VkAttachmentDescription{
+    auto renderpass = gfx::vulkan::renderpass_builder_t{}
+        .add_color_attachment(VkAttachmentDescription{
             .format = VK_FORMAT_R8G8B8A8_SRGB,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
         })
-        .setDepthAttachment(VkAttachmentDescription{
+        .set_depth_attachment(VkAttachmentDescription{
             .format = VK_FORMAT_D32_SFLOAT,
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -64,34 +64,34 @@ int main(int argc, char **argv) {
         })
         .build(context);
     
-    auto pipeline = gfx::vulkan::Pipeline::Builder{}
-        .addDefaultColorBlendAttachmentState()
-        .addDescriptorSetLayout(globalDescriptorSetLayout)
-        .addDescriptorSetLayout(perObjectDescriptorSetLayout)
-        .addDescriptorSetLayout(core::Material::getMaterialDescriptorSetLayout())
-        .addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-        .addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-        .addVertexInputBindingDescription(0, sizeof(core::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
-		.addVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, position))
-		.addVertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, normal))
-		.addVertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT,    offsetof(core::Vertex, uv))
-		.addVertexInputAttributeDescription(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, tangent))
-		.addVertexInputAttributeDescription(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, biTangent))
-        .addShader("../../projects/windowing/shaders/diffuse_only/base.vert.spv")
-        .addShader("../../projects/windowing/shaders/diffuse_only/base.frag.spv")
-        .build(context, renderpass->renderPass());
+    auto pipeline = gfx::vulkan::pipeline_builder_t{}
+        .add_default_color_blend_attachment_state()
+        .add_descriptor_set_layout(globalDescriptorSetLayout)
+        .add_descriptor_set_layout(perObjectDescriptorSetLayout)
+        .add_descriptor_set_layout(core::Material::getMaterialDescriptorSetLayout())
+        .add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+        .add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+        .add_vertex_input_binding_description(0, sizeof(core::Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
+		.add_vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, position))
+		.add_vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, normal))
+		.add_vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32_SFLOAT,    offsetof(core::Vertex, uv))
+		.add_vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, tangent))
+		.add_vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, biTangent))
+        .add_shader("../../projects/windowing/shaders/diffuse_only/base.vert.spv")
+        .add_shader("../../projects/windowing/shaders/diffuse_only/base.frag.spv")
+        .build(context, renderpass->renderpass());
 
     auto [width, height] = window->getSize();
-    auto imageColor = gfx::vulkan::Image::Builder{} 
+    auto imageColor = gfx::vulkan::image_builder_t{} 
         .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    auto imageDepth = gfx::vulkan::Image::Builder{}
+    auto imageDepth = gfx::vulkan::image_builder_t{}
         .build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    auto framebuffer = gfx::vulkan::Framebuffer::Builder{}
-        .addAttachmentView(imageColor->imageView())
-        .addAttachmentView(imageDepth->imageView())
-        .build(context, renderpass->renderPass(), width, height);
+    auto framebuffer = gfx::vulkan::framebuffer_builder_t{}
+        .add_attachment_view(imageColor->image_view())
+        .add_attachment_view(imageDepth->image_view())
+        .build(context, renderpass->renderpass(), width, height);
     
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> globalUniformBufferObject;
     std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>> globalUniformBufferDescriptorSet;
@@ -112,17 +112,17 @@ int main(int argc, char **argv) {
     auto swapChain_descriptor = gfx::vulkan::descriptor_set_builder_t{}
         .build(context, swapChain_descriptorSetLayout);
 
-    auto swapChain_pipeline = gfx::vulkan::Pipeline::Builder{}
-        .addDefaultColorBlendAttachmentState()
-        .addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-        .addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-        .addDescriptorSetLayout(swapChain_descriptorSetLayout)
-        .addShader("../../assets/shaders/swapchain/base.vert.spv")
-        .addShader("../../assets/shaders/swapchain/base.frag.spv")
+    auto swapChain_pipeline = gfx::vulkan::pipeline_builder_t{}
+        .add_default_color_blend_attachment_state()
+        .add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+        .add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+        .add_descriptor_set_layout(swapChain_descriptorSetLayout)
+        .add_shader("../../assets/shaders/swapchain/base.vert.spv")
+        .add_shader("../../assets/shaders/swapchain/base.frag.spv")
         .build(context, context->swapchain_renderpass());
 
     swapChain_descriptor->write()
-        .pushImageInfo(0, 1, imageColor->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
+        .pushImageInfo(0, 1, imageColor->descriptor_info(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
         .update();
 
     // setting up the textured quad entity, atm this is very messy, should be made better/cleaner
@@ -149,10 +149,10 @@ int main(int argc, char **argv) {
         auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = core::make_ref<Window>(context, "firefox");
         auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = core::make_ref<core::Material>();
         mat->diffuse = wind->image();
-        mat->descriptorSet = gfx::vulkan::descriptor_set_builder_t{}
+        mat->descriptor_set = gfx::vulkan::descriptor_set_builder_t{}
             .build(context, core::Material::getMaterialDescriptorSetLayout());
-        mat->descriptorSet->write()
-            .pushImageInfo(0, 1, mat->diffuse->descriptorInfo(VK_IMAGE_LAYOUT_GENERAL))
+        mat->descriptor_set->write()
+            .pushImageInfo(0, 1, mat->diffuse->descriptor_info(VK_IMAGE_LAYOUT_GENERAL))
             .update();
         mesh->material = mat;
         auto& descriptor = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>>>(ent);
@@ -170,19 +170,19 @@ int main(int argc, char **argv) {
 
     context->add_resize_callback([&]() {
         auto [width, height] = window->getSize();
-        imageColor = gfx::vulkan::Image::Builder{} 
+        imageColor = gfx::vulkan::image_builder_t{} 
             .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        imageDepth = gfx::vulkan::Image::Builder{}
+        imageDepth = gfx::vulkan::image_builder_t{}
             .build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        framebuffer = gfx::vulkan::Framebuffer::Builder{}
-            .addAttachmentView(imageColor->imageView())
-            .addAttachmentView(imageDepth->imageView())
-            .build(context, renderpass->renderPass(), width, height);
+        framebuffer = gfx::vulkan::framebuffer_builder_t{}
+            .add_attachment_view(imageColor->image_view())
+            .add_attachment_view(imageDepth->image_view())
+            .build(context, renderpass->renderpass(), width, height);
 
         swapChain_descriptor->write()
-            .pushImageInfo(0, 1, imageColor->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
+            .pushImageInfo(0, 1, imageColor->descriptor_info(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
             .update();
     });
 
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
     		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
             pipeline->bind(commandBuffer);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout(), 0, 1, &globalUniformBufferDescriptorSet[currentIndex]->descriptorSet(), 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline_layout(), 0, 1, &globalUniformBufferDescriptorSet[currentIndex]->descriptor_set(), 0, nullptr);
             for (auto [ent, mesh, transform, descriptor, buffer] : scene.view<std::shared_ptr<core::Mesh>, 
                                                                               core::Transform,
                                                                               std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>>, 
@@ -257,8 +257,8 @@ int main(int argc, char **argv) {
                 perObjectUniformBuffer.model = transform.mat4();
                 perObjectUniformBuffer.invModel = glm::inverse(perObjectUniformBuffer.model);
                 std::memcpy(buffer[currentIndex]->map(), &perObjectUniformBuffer, sizeof(PerObjectUniformBufferStruct));
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout(), 1, 1, &descriptor[currentIndex]->descriptorSet(), 0, nullptr);
-                mesh->draw(commandBuffer, pipeline->pipelineLayout(), true);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline_layout(), 1, 1, &descriptor[currentIndex]->descriptor_set(), 0, nullptr);
+                mesh->draw(commandBuffer, pipeline->pipeline_layout(), true);
             }   
 
             renderpass->end(commandBuffer);
@@ -268,7 +268,7 @@ int main(int argc, char **argv) {
     		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
             swapChain_pipeline->bind(commandBuffer);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapChain_pipeline->pipelineLayout(), 0, 1, &swapChain_descriptor->descriptorSet(), 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapChain_pipeline->pipeline_layout(), 0, 1, &swapChain_descriptor->descriptor_set(), 0, nullptr);
             vkCmdDraw(commandBuffer, 6, 1, 0, 0);
             context->end_swapchain_renderpass(commandBuffer);
 

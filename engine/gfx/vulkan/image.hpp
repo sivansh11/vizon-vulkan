@@ -10,58 +10,59 @@ namespace gfx {
 
 namespace vulkan {
 
-class Image {
+class image_t;
+
+struct image_builder_t {
+    image_builder_t& mip_maps();
+    image_builder_t& set_tiling(VkImageTiling image_tiling);
+    image_builder_t& set_initial_layout(VkImageLayout image_layout);
+    // setting compare op enables compare
+    image_builder_t& set_compare_op(VkCompareOp compare_op);
+    core::ref<image_t> build2D(core::ref<context_t> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags image_usage_flags, VkMemoryPropertyFlags memory_type_index);
+    core::ref<image_t> loadFromPath(core::ref<context_t> context, const std::filesystem::path& file_path, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
+
+    bool enable_mip_maps{false};
+    bool enable_compare_op{false};
+    VkCompareOp compare_op = VK_COMPARE_OP_ALWAYS;
+    VkImageTiling image_tiling = VK_IMAGE_TILING_OPTIMAL;
+    VkImageLayout initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+private:
+    VkImageAspectFlags get_image_aspect(VkFormat format);
+};
+
+struct image_info_t {
+    VkImage image{};
+    VkDeviceMemory device_memory{};
+    VkFormat format{};
+    VkImageLayout current_layout{};
+    VkImageView image_view{};
+    VkSampler sampler{};
+    VkDeviceSize size{};
+    uint32_t width, height;
+    uint32_t mip_levels{};
+};
+
+class image_t {
 public:
-    struct Builder {
-        Builder& mipMaps();
-        Builder& setTiling(VkImageTiling imageTiling);
-        Builder& setInitialLayout(VkImageLayout imageLayout);
-        // setting compare op enables compare
-        Builder& setCompareOp(VkCompareOp compareOp);
-        core::ref<Image> build2D(core::ref<context_t> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
-        core::ref<Image> loadFromPath(core::ref<context_t> context, const std::filesystem::path& filePath, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
+    image_t(core::ref<context_t> context, const image_info_t& image_info);
+    ~image_t();
 
-        bool enableMipMaps{false};
-        bool enableCompareOp{false};
-        VkCompareOp compareOp = VK_COMPARE_OP_ALWAYS;
-        VkImageTiling imageTiling = VK_IMAGE_TILING_OPTIMAL;
-        VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    private:
-        VkImageAspectFlags getImageAspect(VkFormat format);
-    };
-
-    struct ImageInfo {
-        VkImage image{};
-        VkDeviceMemory deviceMemory{};
-        VkFormat format{};
-        VkImageLayout currentLayout{};
-        VkImageView imageView{};
-        VkSampler sampler{};
-        VkDeviceSize size{};
-        uint32_t width, height;
-        uint32_t mipLevels{};
-    };
-
-    Image(core::ref<context_t> context, const ImageInfo& imageInfo);
-    ~Image();
-
-    VkDescriptorImageInfo descriptorInfo(VkImageLayout imageLayout) {
+    VkDescriptorImageInfo descriptor_info(VkImageLayout image_layout) {
         return VkDescriptorImageInfo{
             .sampler = sampler(),
-            .imageView = imageView(),
-            .imageLayout = imageLayout
+            .imageView = image_view(),
+            .imageLayout = image_layout
         };
     }
 
-    // TODO: remove single time command from transition layout and make it take in a command buffer instead
-    void transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
-    void transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void genMipMaps(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout);
+    void transition_layout(VkImageLayout old_layout, VkImageLayout new_layout);
+    void transition_layout(VkCommandBuffer command_buffer, VkImageLayout old_layout, VkImageLayout new_layout);
+    void genMipMaps(VkCommandBuffer command_buffer, VkImageLayout old_layout, VkImageLayout new_layout);
+    void genMipMaps(VkImageLayout old_layout, VkImageLayout new_layout);
 
-    static void copyBufferToImage(core::ref<context_t> context, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
-    static void copyBufferToImage(VkCommandBuffer commandBuffer, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy);
+    static void copy_buffer_to_image(core::ref<context_t> context, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy);
+    static void copy_buffer_to_image(VkCommandBuffer command_buffer, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy);
 
     void *map(VkDeviceSize poffset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     void unmap();
@@ -72,20 +73,20 @@ public:
     void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     
 
-    VkImage& image() { return m_imageInfo.image; }
-    VkImageView& imageView() { return m_imageInfo.imageView; }
-    VkSampler& sampler() { return m_imageInfo.sampler; }
-    VkFormat& format() { return m_imageInfo.format; }
-    VkImageLayout& imageLayout() { return m_imageInfo.currentLayout; }
-    VkDeviceSize size() { return m_imageInfo.size; }
-    VkImageLayout& currentLayout() { return m_imageInfo.currentLayout; }
-    std::pair<uint32_t, uint32_t> dimensions() { return {m_imageInfo.width, m_imageInfo.height}; }
+    VkImage& image() { return _imageInfo.image; }
+    VkImageView& image_view() { return _imageInfo.image_view; }
+    VkSampler& sampler() { return _imageInfo.sampler; }
+    VkFormat& format() { return _imageInfo.format; }
+    VkImageLayout& image_layout() { return _imageInfo.current_layout; }
+    VkDeviceSize size() { return _imageInfo.size; }
+    VkImageLayout& current_layout() { return _imageInfo.current_layout; }
+    std::pair<uint32_t, uint32_t> dimensions() { return {_imageInfo.width, _imageInfo.height}; }
 
-    friend class RenderPass;
+    friend class renderpass_t;
 
 private:
-    core::ref<context_t> m_context{};
-    ImageInfo m_imageInfo{};
+    core::ref<context_t> _context{};
+    image_info_t _imageInfo{};
 };
 
 } // namespace vulkan

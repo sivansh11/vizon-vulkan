@@ -24,10 +24,10 @@ void Material::destroy() {
 }
 
 void Material::update() {
-    descriptorSet->write()
+    descriptor_set->write()
         .pushImageInfo(0, 1, VkDescriptorImageInfo{
             .sampler = diffuse->sampler(),
-            .imageView = diffuse->imageView(),
+            .imageView = diffuse->image_view(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         })
         // .pushImageInfo(1, 1, VkDescriptorImageInfo{

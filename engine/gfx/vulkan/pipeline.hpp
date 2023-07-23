@@ -11,49 +11,50 @@ namespace gfx {
 
 namespace vulkan {
 
-class Pipeline {
+class pipeline_t;
+
+struct pipeline_builder_t {
+    pipeline_builder_t();
+    pipeline_builder_t& add_shader(const std::filesystem::path& shader_path);
+    pipeline_builder_t& add_dynamic_state(VkDynamicState state);
+
+    pipeline_builder_t& add_descriptor_set_layout(core::ref<descriptor_set_layout_t> descriptor_set_layout);
+
+    pipeline_builder_t& add_default_color_blend_attachment_state();
+    pipeline_builder_t& add_color_blend_attachment_state(const VkPipelineColorBlendAttachmentState& pipeline_color_blend_attachment_state);
+
+    pipeline_builder_t& set_depth_stencil_state(const VkPipelineDepthStencilStateCreateInfo& pipeline_depth_stencil_state);
+
+    pipeline_builder_t& add_vertex_input_binding_description(uint32_t binding, uint32_t stride, VkVertexInputRate input_rate);
+    pipeline_builder_t& add_vertex_input_attribute_description(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);   
+    pipeline_builder_t& set_vertex_input_binding_description_vector(const std::vector<VkVertexInputBindingDescription>& val);
+    pipeline_builder_t& set_vertex_input_attribute_description_vector(const std::vector<VkVertexInputAttributeDescription>& val);        
+
+    core::ref<pipeline_t> build(core::ref<context_t> context, VkRenderPass renderpass);
+
+    std::vector<VkDynamicState> dynamic_states;
+    std::vector<std::filesystem::path> shader_paths;
+    std::vector<VkVertexInputAttributeDescription> vertex_input_attribute_descriptions;
+    std::vector<VkVertexInputBindingDescription> vertex_input_binding_descriptions;
+    std::vector<VkDescriptorSetLayout> descriptor_set_layouts; 
+    std::vector<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
+    VkPipelineDepthStencilStateCreateInfo pipeline_depth_stencil_state_create_info{};
+};
+
+class pipeline_t {
 public:
+    pipeline_t(core::ref<context_t> context, VkPipelineLayout pipeline_layout, VkPipeline pipeline, VkPipelineBindPoint pipeline_bind_point);
+    ~pipeline_t();
 
-    struct Builder {
-        Builder();
-        Builder& addShader(const std::filesystem::path& shaderPath);
-        Builder& addDynamicState(VkDynamicState state);
+    void bind(VkCommandBuffer command_buffer);
 
-        Builder& addDescriptorSetLayout(core::ref<descriptor_set_layout_t> descriptorSetLayout);
-
-        Builder& addDefaultColorBlendAttachmentState();
-        Builder& addColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState);
-
-        Builder& setDepthStencilState(const VkPipelineDepthStencilStateCreateInfo& pipelineDepthStencilState);
-
-        Builder& addVertexInputBindingDescription(uint32_t binding, uint32_t stride, VkVertexInputRate inputRate);
-        Builder& addVertexInputAttributeDescription(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);   
-        Builder& setVertexInputBindingDescriptionVector(const std::vector<VkVertexInputBindingDescription>& val);
-        Builder& setVertexInputAttributeDescriptionVector(const std::vector<VkVertexInputAttributeDescription>& val);        
-
-        core::ref<Pipeline> build(core::ref<context_t> context, VkRenderPass renderPass);
-
-        std::vector<VkDynamicState> dynamicStates;
-        std::vector<std::filesystem::path> shaderPaths;
-        std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
-        std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
-        std::vector<VkDescriptorSetLayout> descriptorSetLayouts; 
-        std::vector<VkPipelineColorBlendAttachmentState> pipelineColorBlendAttachmentStates;
-        VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo{};
-    };
-
-    Pipeline(core::ref<context_t> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint);
-    ~Pipeline();
-
-    void bind(VkCommandBuffer commandBuffer);
-
-    VkPipelineLayout& pipelineLayout() { return m_pipelineLayout; }
+    VkPipelineLayout& pipeline_layout() { return _pipeline_layout; }
 
 private:
-    core::ref<context_t> m_context;
-    VkPipelineLayout m_pipelineLayout;
-    VkPipeline m_pipeline;
-    VkPipelineBindPoint m_pipelineBindPoint;
+    core::ref<context_t> _context;
+    VkPipelineLayout _pipeline_layout;
+    VkPipeline _pipeline;
+    VkPipelineBindPoint _pipeline_bind_point;
 };
 
 } // namespace vulkan

@@ -24,7 +24,7 @@ struct vertex_t {
     glm::vec3 normal;
     glm::vec2 uv;
     glm::vec3 tangent;
-    glm::vec3 biTangent;
+    glm::vec3 bi_tangent;
 };
 
 enum texture_type_t {
@@ -82,12 +82,12 @@ private:
     void processNode(aiNode *node, const aiScene *scene, aiMatrix4x4& transform);
     core::ref<core::Mesh> processMesh(aiMesh *mesh, const aiScene *scene, aiMatrix4x4& transform);
     core::ref<core::Material> processMaterial(aiMaterial *material);
-    core::ref<gfx::vulkan::Image> loadMaterialTexture(aiMaterial *mat, aiTextureType type, std::string typeName);
+    core::ref<gfx::vulkan::image_t> loadMaterialTexture(aiMaterial *mat, aiTextureType type, std::string typeName);
 
 private:
     std::filesystem::path m_filePath, m_directory;
     core::ref<gfx::vulkan::context_t> m_context;
-    std::unordered_map<std::string, core::ref<gfx::vulkan::Image>> m_loadedImages;
+    std::unordered_map<std::string, core::ref<gfx::vulkan::image_t>> m_loadedImages;
 };
 
 } // namespace core

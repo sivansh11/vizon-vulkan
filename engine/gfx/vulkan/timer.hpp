@@ -10,19 +10,19 @@ namespace gfx {
 namespace vulkan {
 
 // GPU side profiler
-class Timer {
+class gpu_timer_t {
 public:
-    Timer(core::ref<context_t> context);
-    ~Timer();
+    gpu_timer_t(core::ref<context_t> context);
+    ~gpu_timer_t();
 
-    void begin(VkCommandBuffer commandBuffer);
-    void end(VkCommandBuffer commandBuffer);
+    void begin(VkCommandBuffer command_buffer);
+    void end(VkCommandBuffer command_buffer);
 
     std::optional<float> getTime();
 
 private:
-    core::ref<context_t> m_context{};
-    VkQueryPool m_queryPool{};
+    core::ref<context_t> _context{};
+    VkQueryPool _queryPool{};
 };
 
 } // namespace vulkan

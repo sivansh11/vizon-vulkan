@@ -6,12 +6,12 @@ namespace gfx {
 
 namespace vulkan {
 
-Framebuffer::Builder& Framebuffer::Builder::addAttachmentView(VkImageView view) {
+framebuffer_builder_t& framebuffer_builder_t::add_attachment_view(VkImageView view) {
     attachments.push_back(view);
     return *this;
 }
 
-core::ref<Framebuffer> Framebuffer::Builder::build(core::ref<context_t> context, VkRenderPass renderPass, uint32_t width, uint32_t height) {
+core::ref<framebuffer_t> framebuffer_builder_t::build(core::ref<context_t> context, VkRenderPass renderPass, uint32_t width, uint32_t height) {
     VkFramebufferCreateInfo framebufferCreateInfo{};
     framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferCreateInfo.renderPass = renderPass;
@@ -28,16 +28,16 @@ core::ref<Framebuffer> Framebuffer::Builder::build(core::ref<context_t> context,
         std::terminate();
     }
 
-    return core::make_ref<Framebuffer>(context, framebuffer);
+    return core::make_ref<framebuffer_t>(context, framebuffer);
 }
 
-Framebuffer::Framebuffer(core::ref<context_t> context, VkFramebuffer framebuffer) 
-  : m_context(context), m_framebuffer(framebuffer) {
+framebuffer_t::framebuffer_t(core::ref<context_t> context, VkFramebuffer framebuffer) 
+  : _context(context), _framebuffer(framebuffer) {
     TRACE("Created framebuffer");
 }
 
-Framebuffer::~Framebuffer() {
-    vkDestroyFramebuffer(m_context->device(), m_framebuffer, nullptr);
+framebuffer_t::~framebuffer_t() {
+    vkDestroyFramebuffer(_context->device(), _framebuffer, nullptr);
     TRACE("Destroyed framebuffer");
 }
 

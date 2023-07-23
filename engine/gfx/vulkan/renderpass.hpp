@@ -6,32 +6,34 @@
 namespace gfx {
 
 namespace vulkan {
-    
-class RenderPass {
+
+class renderpass_t;
+
+struct renderpass_builder_t {
+    renderpass_builder_t& add_color_attachment(const VkAttachmentDescription& attachment_description);
+    renderpass_builder_t& set_depth_attachment(const VkAttachmentDescription& attachment_description);
+    core::ref<renderpass_t> build(core::ref<context_t> context);
+
+    bool depth_added = false;
+    uint32_t counter = 0;
+    std::vector<VkAttachmentDescription> attachment_descriptions{};
+    std::vector<VkAttachmentReference> color_attachments_refrences{};
+    VkAttachmentReference depth_attachment_refrence{};
+};
+
+class renderpass_t {
 public:
-    struct Builder {
-        Builder& addColorAttachment(const VkAttachmentDescription& attachmentDescription);
-        Builder& setDepthAttachment(const VkAttachmentDescription& attachmentDescription);
-        core::ref<RenderPass> build(core::ref<context_t> context);
+    renderpass_t(core::ref<context_t> context, VkRenderPass renderpass);
+    ~renderpass_t();
 
-        bool depthAdded = false;
-        uint32_t counter = 0;
-        std::vector<VkAttachmentDescription> attachmentDescriptions{};
-        std::vector<VkAttachmentReference> colorAttachmentsRefrences{};
-        VkAttachmentReference depthAttachmentRefrence{};
-    };
+    void begin(VkCommandBuffer command_buffer, VkFramebuffer framebuffer, const VkRect2D render_area, const std::vector<VkClearValue>& clear_values);
+    void end(VkCommandBuffer command_buffer);
 
-    RenderPass(core::ref<context_t> context, VkRenderPass renderPass);
-    ~RenderPass();
-
-    void begin(VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, const VkRect2D renderArea, const std::vector<VkClearValue>& clearValues);
-    void end(VkCommandBuffer commandBuffer);
-
-    VkRenderPass& renderPass() { return m_renderPass; }
+    VkRenderPass& renderpass() { return _renderpass; }
 
 private:
-    core::ref<context_t> m_context;
-    VkRenderPass m_renderPass;
+    core::ref<context_t> _context;
+    VkRenderPass _renderpass;
 };
 
 } // namespace vulkan

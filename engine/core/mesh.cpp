@@ -42,7 +42,7 @@ Mesh::~Mesh() {
 
 void Mesh::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool withMaterial) {
     if (withMaterial)
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &material->descriptorSet->descriptorSet(), 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &material->descriptor_set->descriptor_set(), 0, nullptr);
 
     VkDeviceSize offsets{0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_vertices->buffer(), &offsets);

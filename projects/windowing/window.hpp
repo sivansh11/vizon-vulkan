@@ -17,14 +17,14 @@ public:
 
     void update(VkCommandBuffer commandBuffer);
 
-    std::shared_ptr<gfx::vulkan::Image> image() { return m_image; }
+    std::shared_ptr<gfx::vulkan::image_t> image() { return m_image; }
 
 private:
     std::shared_ptr<gfx::vulkan::context_t> m_context;
     std::vector<SL::Screen_Capture::Window> selectedWindow{};
     std::atomic<bool> m_imgBufferChanged = false;
     std::shared_ptr<SL::Screen_Capture::IScreenCaptureManager> m_framegrabber;
-    std::shared_ptr<gfx::vulkan::Image> m_image;
+    std::shared_ptr<gfx::vulkan::image_t> m_image;
     void *map;
 };
 

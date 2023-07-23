@@ -33,7 +33,7 @@ core::ref<buffer_t> buffer_builder_t::build(core::ref<context_t> context, VkDevi
     memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_allocate_info.allocationSize = memory_requirements.size;
     memory_allocate_info.memoryTypeIndex = context->find_memory_type(memory_requirements.memoryTypeBits, memoryTypeIndex);
-    if (false)  // TODO: come back to this
+    if (context->_raytracing)  // TODO: come back to this
         memory_allocate_info.pNext = &memory_allocate_flags_info;
 
     VkDeviceMemory device_memory;
