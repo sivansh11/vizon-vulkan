@@ -14,11 +14,11 @@ static void checkVkResult(VkResult error) {
 }
 
 struct ImGuiBackendRendererData {
-    ref<gfx::vulkan::Context> context;
+    ref<gfx::vulkan::context_t> context;
 
 };
 
-void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::Context> context) {
+void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::context_t> context) {
     VIZON_PROFILE_FUNCTION();
     IMGUI_CHECKVERSION();
     
@@ -44,17 +44,17 @@ void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::Context> 
 
     ImGui_ImplVulkan_InitInfo initInfo{};
     initInfo.Instance = context->instance();
-    initInfo.PhysicalDevice = context->physicalDevice();
+    initInfo.PhysicalDevice = context->physical_device();
     initInfo.Device = context->device();
-    initInfo.QueueFamily = context->queueFamilyIndices().graphicsFamily.value();
-    initInfo.Queue = context->graphicsQueue();
+    initInfo.QueueFamily = context->queue_family_indices().graphics_family.value();
+    initInfo.Queue = context->graphics_queue();
 
     initInfo.PipelineCache = VK_NULL_HANDLE;
-    initInfo.DescriptorPool = context->descriptorPool();
+    initInfo.DescriptorPool = context->descriptor_pool();
 
     initInfo.Allocator = VK_NULL_HANDLE;
     initInfo.MinImageCount = 2;
-    initInfo.ImageCount = context->swapChainImageCount();
+    initInfo.ImageCount = context->swapchain_image_count();
     initInfo.CheckVkResultFn = checkVkResult;
     initInfo.Subpass = 0;
 
@@ -62,9 +62,9 @@ void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::Context> 
         return vkGetInstanceProcAddr(*(reinterpret_cast<VkInstance *>(vulkan_instance)), function_name);
     }, &context->instance());
 
-    ImGui_ImplVulkan_Init(&initInfo, context->swapChainRenderPass());
+    ImGui_ImplVulkan_Init(&initInfo, context->swapchain_renderpass());
     
-    context->singleUseCommandBuffer([](VkCommandBuffer commandBuffer) {
+    context->single_use_command_buffer([](VkCommandBuffer commandBuffer) {
         ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
     });
     ImGui_ImplVulkan_DestroyFontUploadObjects();

@@ -12,7 +12,7 @@ namespace vulkan {
 // GPU side profiler
 class Timer {
 public:
-    Timer(core::ref<Context> context);
+    Timer(core::ref<context_t> context);
     ~Timer();
 
     void begin(VkCommandBuffer commandBuffer);
@@ -21,7 +21,7 @@ public:
     std::optional<float> getTime();
 
 private:
-    core::ref<Context> m_context{};
+    core::ref<context_t> m_context{};
     VkQueryPool m_queryPool{};
 };
 

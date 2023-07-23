@@ -6,7 +6,7 @@ namespace gfx {
     
 namespace vulkan {
 
-DescriptorSetLayout::Builder& DescriptorSetLayout::Builder::addLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, uint32_t count, VkShaderStageFlags shaderStageFlags) {
+descriptor_set_layout_builder_t& descriptor_set_layout_builder_t::addLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, uint32_t count, VkShaderStageFlags shaderStageFlags) {
     VkDescriptorSetLayoutBinding descriptorSetLayoutBinding{};
     descriptorSetLayoutBinding.binding = binding;
     descriptorSetLayoutBinding.descriptorType = descriptorType;
@@ -16,7 +16,7 @@ DescriptorSetLayout::Builder& DescriptorSetLayout::Builder::addLayoutBinding(uin
     return *this;
 }
 
-core::ref<DescriptorSetLayout> DescriptorSetLayout::Builder::build(core::ref<Context> context) {
+core::ref<descriptor_set_layout_t> descriptor_set_layout_builder_t::build(core::ref<context_t> context) {
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptorSetLayoutCreateInfo.bindingCount = descriptorSetLayoutBindings.size();
@@ -29,33 +29,33 @@ core::ref<DescriptorSetLayout> DescriptorSetLayout::Builder::build(core::ref<Con
         std::terminate();
     }
 
-    return core::make_ref<DescriptorSetLayout>(context, descriptorSetLayout);
+    return core::make_ref<descriptor_set_layout_t>(context, descriptorSetLayout);
 }
 
-DescriptorSetLayout::DescriptorSetLayout(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout) 
-  : m_context(context),
-    m_descriptorSetLayout(descriptorSetLayout) {
+descriptor_set_layout_t::descriptor_set_layout_t(core::ref<context_t> context, VkDescriptorSetLayout descriptorSetLayout) 
+  : _context(context),
+    _descriptor_set_layout(descriptorSetLayout) {
 
     TRACE("Created descriptor set layout");
 }
 
-DescriptorSetLayout::~DescriptorSetLayout() {
-    vkDestroyDescriptorSetLayout(m_context->device(), m_descriptorSetLayout, nullptr);
+descriptor_set_layout_t::~descriptor_set_layout_t() {
+    vkDestroyDescriptorSetLayout(_context->device(), _descriptor_set_layout, nullptr);
     TRACE("Destroyed descriptor set layout");
 }
 
-core::ref<DescriptorSet> DescriptorSetLayout::newDescriptorSet() {
-    return DescriptorSet::Builder{}
-        .build(m_context, m_descriptorSetLayout);
+core::ref<descriptor_set_t> descriptor_set_layout_t::new_descriptor_set() {
+    return descriptor_set_builder_t{}
+        .build(_context, _descriptor_set_layout);
 }
 
 
-core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> context, core::ref<DescriptorSetLayout> descriptorSetLayout) {
+core::ref<descriptor_set_t> descriptor_set_builder_t::build(core::ref<context_t> context, core::ref<descriptor_set_layout_t> descriptorSetLayout) {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = context->descriptorPool();
+    descriptorSetAllocateInfo.descriptorPool = context->descriptor_pool();
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    VkDescriptorSetLayout p_descriptorSetLayout[] = { descriptorSetLayout->descriptorSetLayout() }; 
+    VkDescriptorSetLayout p_descriptorSetLayout[] = { descriptorSetLayout->descriptor_set_layout() }; 
     descriptorSetAllocateInfo.pSetLayouts = p_descriptorSetLayout;
 
     VkDescriptorSet descriptorSet;
@@ -64,13 +64,13 @@ core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> contex
         ERROR("Failed to allocate descriptor set");
         std::terminate();
     }
-    return core::make_ref<DescriptorSet>(context, descriptorSet);
+    return core::make_ref<descriptor_set_t>(context, descriptorSet);
 }
 
-core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> context, VkDescriptorSetLayout descriptorSetLayout) {
+core::ref<descriptor_set_t> descriptor_set_builder_t::build(core::ref<context_t> context, VkDescriptorSetLayout descriptorSetLayout) {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = context->descriptorPool();
+    descriptorSetAllocateInfo.descriptorPool = context->descriptor_pool();
     descriptorSetAllocateInfo.descriptorSetCount = 1;
     VkDescriptorSetLayout p_descriptorSetLayout[] = { descriptorSetLayout }; 
     descriptorSetAllocateInfo.pSetLayouts = p_descriptorSetLayout;
@@ -81,32 +81,32 @@ core::ref<DescriptorSet> DescriptorSet::Builder::build(core::ref<Context> contex
         ERROR("Failed to allocate descriptor set");
         std::terminate();
     }
-    return core::make_ref<DescriptorSet>(context, descriptorSet);
+    return core::make_ref<descriptor_set_t>(context, descriptorSet);
 }
 
-DescriptorSet::DescriptorSet(core::ref<Context> context, VkDescriptorSet descriptorSet) 
+descriptor_set_t::descriptor_set_t(core::ref<context_t> context, VkDescriptorSet descriptorSet) 
   : m_context(context),
     m_descriptorSet(descriptorSet) {
     TRACE("Created descriptor set");
 }
 
-DescriptorSet::~DescriptorSet() {
+descriptor_set_t::~descriptor_set_t() {
     // vkFreeDescriptorSets(m_context->device(), m_context->descriptorPool(), 1, &m_descriptorSet);
     // TRACE("Destroyed descriptor set");
 }
 
-DescriptorSet::Write::Write(core::ref<Context> context, VkDescriptorSet descriptorSet) 
+descriptor_set_t::Write::Write(core::ref<context_t> context, VkDescriptorSet descriptorSet) 
   : context(context),
     descriptorSet(descriptorSet) {
     
 }
 
-DescriptorSet::Write& DescriptorSet::write() {
+descriptor_set_t::Write& descriptor_set_t::write() {
     // not how I write code normally, kinda funny 
     return *new Write(m_context, m_descriptorSet);    
 }
 
-DescriptorSet::Write& DescriptorSet::Write::pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptorImageInfo) {
+descriptor_set_t::Write& descriptor_set_t::Write::pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptorImageInfo) {
     VkWriteDescriptorSet writeDescriptorset{};
     writeDescriptorset.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorset.dstBinding = binding;
@@ -118,7 +118,7 @@ DescriptorSet::Write& DescriptorSet::Write::pushImageInfo(uint32_t binding, uint
     return *this;
 }
 
-DescriptorSet::Write& DescriptorSet::Write::pushBufferInfo(uint32_t binding, uint32_t count, const VkDescriptorBufferInfo& descriptorBuffeInfo) {
+descriptor_set_t::Write& descriptor_set_t::Write::pushBufferInfo(uint32_t binding, uint32_t count, const VkDescriptorBufferInfo& descriptorBuffeInfo) {
     VkWriteDescriptorSet writeDescriptorset{};
     writeDescriptorset.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorset.dstBinding = binding;
@@ -131,7 +131,7 @@ DescriptorSet::Write& DescriptorSet::Write::pushBufferInfo(uint32_t binding, uin
 }
 
 
-void DescriptorSet::Write::update() {
+void descriptor_set_t::Write::update() {
     vkUpdateDescriptorSets(context->device(), writes.size(), writes.data(), 0, nullptr);
     delete this;
 }

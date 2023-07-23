@@ -11,7 +11,7 @@ Framebuffer::Builder& Framebuffer::Builder::addAttachmentView(VkImageView view) 
     return *this;
 }
 
-core::ref<Framebuffer> Framebuffer::Builder::build(core::ref<Context> context, VkRenderPass renderPass, uint32_t width, uint32_t height) {
+core::ref<Framebuffer> Framebuffer::Builder::build(core::ref<context_t> context, VkRenderPass renderPass, uint32_t width, uint32_t height) {
     VkFramebufferCreateInfo framebufferCreateInfo{};
     framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferCreateInfo.renderPass = renderPass;
@@ -31,7 +31,7 @@ core::ref<Framebuffer> Framebuffer::Builder::build(core::ref<Context> context, V
     return core::make_ref<Framebuffer>(context, framebuffer);
 }
 
-Framebuffer::Framebuffer(core::ref<Context> context, VkFramebuffer framebuffer) 
+Framebuffer::Framebuffer(core::ref<context_t> context, VkFramebuffer framebuffer) 
   : m_context(context), m_framebuffer(framebuffer) {
     TRACE("Created framebuffer");
 }

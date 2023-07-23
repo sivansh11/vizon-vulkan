@@ -6,7 +6,7 @@ namespace gfx {
 
 namespace vulkan {
 
-Timer::Timer(core::ref<Context> context)
+Timer::Timer(core::ref<context_t> context)
   : m_context(context) {
     VkQueryPoolCreateInfo queryPoolCreateInfo{};
     queryPoolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
@@ -41,7 +41,7 @@ std::optional<float> Timer::getTime() {
         WARN("not successful time stamp");
         return std::nullopt;
     }
-    return ((timeStamps[1] - timeStamps[0]) * m_context->physicalDeviceProperties().limits.timestampPeriod) / 1000000.f;
+    return ((timeStamps[1] - timeStamps[0]) * m_context->physical_device_properties().limits.timestampPeriod) / 1000000.f;
 }
 
 } // namespace vulkan

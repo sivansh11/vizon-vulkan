@@ -12,7 +12,7 @@ namespace vulkan {
 class buffer_t {
 public:
 
-    buffer_t(core::ref<Context> context, VkBuffer buffer, VkDeviceMemory deviceMemory);
+    buffer_t(core::ref<context_t> context, VkBuffer buffer, VkDeviceMemory device_memory);
     ~buffer_t();
 
     VkDescriptorBufferInfo descriptor_info(VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE) {
@@ -30,20 +30,20 @@ public:
     void flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     
-    static void copy(core::ref<Context> context, buffer_t& srcBuffer, buffer_t& dstBuffer, const VkBufferCopy& bufferCopy);
+    static void copy(core::ref<context_t> context, buffer_t& src_buffer, buffer_t& dst_buffer, const VkBufferCopy& buffer_copy);
 
-    VkBuffer& buffer() { return m_buffer; }
-    VkDeviceMemory& device_memory() { return m_deviceMemory; }
+    VkBuffer& buffer() { return _buffer; }
+    VkDeviceMemory& device_memory() { return _deviceMemory; }
 
 private:
-    void *m_mapped{nullptr};
-    core::ref<Context> m_context;
-    VkBuffer m_buffer;
-    VkDeviceMemory m_deviceMemory;
+    void *_mapped{nullptr};
+    core::ref<context_t> _context;
+    VkBuffer _buffer;
+    VkDeviceMemory _deviceMemory;
 };
 
 struct buffer_builder_t {
-    core::ref<buffer_t> build(core::ref<Context> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
+    core::ref<buffer_t> build(core::ref<context_t> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex);
 };  
 
 } // namespace vulkan

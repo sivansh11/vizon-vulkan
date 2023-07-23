@@ -10,18 +10,18 @@
 
 #include <entt/entt.hpp>
 
-Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vulkan::Context> context, std::shared_ptr<event::Dispatcher> dispatcher)
+Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vulkan::context_t> context, std::shared_ptr<event::Dispatcher> dispatcher)
   : window(window), dispatcher(dispatcher) {
     Renderer::context = context;
 
 	auto [width, height] = window->getSize();
 
-	depthDescriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+	depthDescriptorSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
 		.build(context);
 	
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-		depthDescriptorSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
+		depthDescriptorSet0.push_back(gfx::vulkan::descriptor_set_builder_t{}
 			.build(context, depthDescriptorSetLayout0));
 		depthSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(DepthSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
@@ -66,11 +66,11 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 	depthTimer = std::make_shared<gfx::vulkan::Timer>(context);
 	
-	descriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+	descriptorSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build(context);
 
-	descriptorSetLayout1 = gfx::vulkan::DescriptorSetLayout::Builder{}
+	descriptorSetLayout1 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build(context);
 
@@ -83,7 +83,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 			.build(context, sizeof(Set1UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
 		set1UniformBufferMap.push_back(set1UniformBuffer[i]->map());
 
-		descriptorSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}	
+		descriptorSet0.push_back(gfx::vulkan::descriptor_set_builder_t{}	
 			.build(context, descriptorSetLayout0));
 		
 		descriptorSet0[i]->write()
@@ -94,7 +94,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 			})
 			.update();
 
-		descriptorSet1.push_back(gfx::vulkan::DescriptorSet::Builder{}
+		descriptorSet1.push_back(gfx::vulkan::descriptor_set_builder_t{}
 			.build(context, descriptorSetLayout1));
 
 		descriptorSet1[i]->write()
@@ -195,12 +195,12 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 	deferredTimer = std::make_shared<gfx::vulkan::Timer>(context);
 
-	shadowDescriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+	shadowDescriptorSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
 		.build(context);
 
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-		shadowDescriptorSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
+		shadowDescriptorSet0.push_back(gfx::vulkan::descriptor_set_builder_t{}
 			.build(context, shadowDescriptorSetLayout0));
 		shadowSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
 			.build(context, sizeof(ShadowSet0UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -257,7 +257,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		})
 		.build(context);
 
-	ssaoDescriptorSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+	ssaoDescriptorSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -286,7 +286,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.build(context, ssaoRenderPass->renderPass());
 
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-		ssaoSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
+		ssaoSet0.push_back(gfx::vulkan::descriptor_set_builder_t{}
 			.build(context, ssaoDescriptorSetLayout0));
 		
 		ssaoSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
@@ -337,7 +337,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addAttachmentView(compositeImage->imageView())
 		.build(context, compositeRenderPass->renderPass(), width, height);
 	
-	compositeSetLayout0 = gfx::vulkan::DescriptorSetLayout::Builder{}
+	compositeSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.addLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -347,7 +347,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.build(context);
 
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-		compositeSet0.push_back(gfx::vulkan::DescriptorSet::Builder{}
+		compositeSet0.push_back(gfx::vulkan::descriptor_set_builder_t{}
 			.build(context, compositeSetLayout0));
 		
 		compositeSet0UniformBuffer.push_back(gfx::vulkan::buffer_builder_t{}
@@ -401,11 +401,11 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 
 	compositeTimer = std::make_shared<gfx::vulkan::Timer>(context);
 
-	swapChainPipelineDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
+	swapChainPipelineDescriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build(context);
 	
-	swapChainPipelineDescriptorSet = gfx::vulkan::DescriptorSet::Builder{}
+	swapChainPipelineDescriptorSet = gfx::vulkan::descriptor_set_builder_t{}
 		.build(context, swapChainPipelineDescriptorSetLayout);
 	swapChainPipelineDescriptorSet->write()
 		.pushImageInfo(0, 1, VkDescriptorImageInfo{
@@ -422,7 +422,7 @@ Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vu
 		.addDescriptorSetLayout(swapChainPipelineDescriptorSetLayout)
 		.addDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
 		.addDynamicState(VK_DYNAMIC_STATE_SCISSOR)
-		.build(context, context->swapChainRenderPass());	
+		.build(context, context->swapchain_renderpass());	
 	
 	swapChainTimer = std::make_shared<gfx::vulkan::Timer>(context);
 
@@ -556,7 +556,7 @@ void Renderer::recreateDimentionDependentResources() {
 }
 
 void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraComponent& camera) {
-	if (auto startFrame = context->startFrame()) {
+	if (auto startFrame = context->start_frame()) {
 		auto [commandBuffer, currentFrame] = *startFrame;
 
 		VkClearValue clearColor{};
@@ -567,21 +567,21 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		depthTimer->begin(commandBuffer);
 		depthRenderPass->begin(commandBuffer, depthFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
-			.extent = context->swapChainExtent()
+			.extent = context->swapchain_extent()
 		}, {
 			clearDepth
 		});
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(context->swapChainExtent().width);
-		viewport.height = static_cast<float>(context->swapChainExtent().height);
+		viewport.width = static_cast<float>(context->swapchain_extent().width);
+		viewport.height = static_cast<float>(context->swapchain_extent().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		VkRect2D scissor{};
 		scissor.offset = {0, 0};
-		scissor.extent = context->swapChainExtent();
+		scissor.extent = context->swapchain_extent();
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		depthPipeline->bind(commandBuffer);
 		core::Transform transform{};
@@ -589,8 +589,8 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		depthSet0UBO.model = transform.mat4();
 		depthSet0UBO.projection = camera.getProjection();
 		depthSet0UBO.view = camera.getView();
-		std::memcpy(depthSet0UniformBufferMap[context->currentFrame()], &depthSet0UBO, sizeof(DepthSet0UBO));
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, depthPipeline->pipelineLayout(), 0, 1, &depthDescriptorSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
+		std::memcpy(depthSet0UniformBufferMap[context->current_frame()], &depthSet0UBO, sizeof(DepthSet0UBO));
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, depthPipeline->pipelineLayout(), 0, 1, &depthDescriptorSet0[context->current_frame()]->descriptorSet(), 0, nullptr);
 
 		for (auto [ent, model] : scene->view<core::Model>().each()) {
 			model.draw(commandBuffer, depthPipeline->pipelineLayout(), false);
@@ -604,7 +604,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		deferredTimer->begin(commandBuffer);
 		deferredRenderPass->begin(commandBuffer, gBufferFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
-			.extent = context->swapChainExtent()
+			.extent = context->swapchain_extent()
 		}, {
 			clearColor,
 			clearColor,
@@ -622,10 +622,10 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		set1UBO.model = transform.mat4();
 		set1UBO.invModelT = glm::transpose(glm::inverse(glm::mat3{set1UBO.model}));
 
-		std::memcpy(set0UniformBufferMap[context->currentFrame()], &set0UBO, sizeof(Set0UBO));
-		std::memcpy(set1UniformBufferMap[context->currentFrame()], &set1UBO, sizeof(Set1UBO));
+		std::memcpy(set0UniformBufferMap[context->current_frame()], &set0UBO, sizeof(Set0UBO));
+		std::memcpy(set1UniformBufferMap[context->current_frame()], &set1UBO, sizeof(Set1UBO));
 
-		VkDescriptorSet sets[] = { descriptorSet0[context->currentFrame()]->descriptorSet(), descriptorSet1[context->currentFrame()]->descriptorSet() };
+		VkDescriptorSet sets[] = { descriptorSet0[context->current_frame()]->descriptorSet(), descriptorSet1[context->current_frame()]->descriptorSet() };
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipeline->pipelineLayout(), 0, 2, sets, 0, nullptr);
 		for (auto [ent, model] : scene->view<core::Model>().each()) {
@@ -677,9 +677,9 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 								glm::vec3( 0.0f, 1.0f,  0.0f));  
 		glm::mat4 lightSpace = lightProjection * lightView;
 		shadowSet0UBO.lightSpace = lightSpace;
-		std::memcpy(shadowSet0UniformBufferMap[context->currentFrame()], &shadowSet0UBO, sizeof(ShadowSet0UBO));
+		std::memcpy(shadowSet0UniformBufferMap[context->current_frame()], &shadowSet0UBO, sizeof(ShadowSet0UBO));
 		{
-			VkDescriptorSet sets[] = { shadowDescriptorSet0[context->currentFrame()]->descriptorSet(), descriptorSet1[context->currentFrame()]->descriptorSet() };
+			VkDescriptorSet sets[] = { shadowDescriptorSet0[context->current_frame()]->descriptorSet(), descriptorSet1[context->current_frame()]->descriptorSet() };
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline->pipelineLayout(), 0, 2, sets, 0, nullptr);
 		}
 		for (auto [ent, model] : scene->view<core::Model>().each()) {
@@ -694,7 +694,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		ssaoTimer->begin(commandBuffer);
 		ssaoRenderPass->begin(commandBuffer, ssaoFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
-			.extent = context->swapChainExtent()
+			.extent = context->swapchain_extent()
 		}, {
 			clearColor,
 			clearColor,
@@ -711,8 +711,8 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		ssaoSet0UBO.invProjection = glm::inverse(ssaoSet0UBO.projection);
 		ssaoSet0UBO.radius = 0.1;
 		ssaoSet0UBO.bias = 0.025;
-		std::memcpy(ssaoSet0UniformBufferMap[context->currentFrame()], &ssaoSet0UBO, sizeof(SsaoSet0UBO));
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipelineLayout(), 0, 1, &ssaoSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
+		std::memcpy(ssaoSet0UniformBufferMap[context->current_frame()], &ssaoSet0UBO, sizeof(SsaoSet0UBO));
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipelineLayout(), 0, 1, &ssaoSet0[context->current_frame()]->descriptorSet(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 		ssaoTimer->end(commandBuffer);
 		if (auto t = ssaoTimer->getTime()) {
@@ -723,7 +723,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		compositeTimer->begin(commandBuffer);
 		compositeRenderPass->begin(commandBuffer, compositeFramebuffer->framebuffer(), VkRect2D{
 			.offset = {0, 0},
-			.extent = context->swapChainExtent()
+			.extent = context->swapchain_extent()
 		}, {
 			clearColor,
 			clearColor,
@@ -742,8 +742,8 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		DirectionalLight directionalLight{};
 		directionalLight.ambience = {0.3, 0.3, 0.3};
 		compositeSet0UBO.directionalLight = directionalLight;
-		std::memcpy(compositeSet0UniformBufferMap[context->currentFrame()], &compositeSet0UBO, sizeof(CompositeSet0UBO));
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, compositePipeline->pipelineLayout(), 0, 1, &compositeSet0[context->currentFrame()]->descriptorSet(), 0, nullptr);
+		std::memcpy(compositeSet0UniformBufferMap[context->current_frame()], &compositeSet0UBO, sizeof(CompositeSet0UBO));
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, compositePipeline->pipelineLayout(), 0, 1, &compositeSet0[context->current_frame()]->descriptorSet(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 		compositeTimer->end(commandBuffer);
 		if (auto t = compositeTimer->getTime()) {
@@ -752,7 +752,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		compositeRenderPass->end(commandBuffer);
 
 		swapChainTimer->begin(commandBuffer);
-		context->beginSwapChainRenderPass(commandBuffer, clearColor);
+		context->begin_swapchain_renderpass(commandBuffer, clearColor);
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapChainPipeline->pipelineLayout(), 0, 1, &swapChainPipelineDescriptorSet->descriptorSet(), 0, nullptr);
@@ -762,9 +762,9 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		if (auto t = swapChainTimer->getTime()) {
 			INFO("SwapChain Timer: {}", *t);
 		}
-		context->endSwapChainRenderPass(commandBuffer);
+		context->end_swapchain_renderpass(commandBuffer);
 
-		if (context->endFrame(commandBuffer))
+		if (context->end_frame(commandBuffer))
 			recreateDimentionDependentResources();		
 	} else {
 		recreateDimentionDependentResources();

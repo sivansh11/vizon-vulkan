@@ -69,7 +69,7 @@ model_t load_model_from_path(const std::filesystem::path& file_path);
 
 class Model {
 public:
-    Model(core::ref<gfx::vulkan::Context> context);
+    Model(core::ref<gfx::vulkan::context_t> context);
     ~Model();
 
     void loadFromPath(const std::filesystem::path& filePath);
@@ -86,7 +86,7 @@ private:
 
 private:
     std::filesystem::path m_filePath, m_directory;
-    core::ref<gfx::vulkan::Context> m_context;
+    core::ref<gfx::vulkan::context_t> m_context;
     std::unordered_map<std::string, core::ref<gfx::vulkan::Image>> m_loadedImages;
 };
 

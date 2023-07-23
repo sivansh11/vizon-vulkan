@@ -27,12 +27,12 @@
 struct gpu_mesh_t {
     core::ref<gfx::vulkan::buffer_t> _vertex_buffer;
     core::ref<gfx::vulkan::buffer_t> _index_buffer;
-    core::ref<gfx::vulkan::DescriptorSet> _material_descriptor_set;
+    core::ref<gfx::vulkan::descriptor_set_t> _material_descriptor_set;
 };
 
 int main(int argc, char **argv) {
     auto window = core::make_ref<core::Window>("test2", 1200, 800);
-    auto ctx = core::make_ref<gfx::vulkan::Context>(window, 2, true);
+    auto ctx = core::make_ref<gfx::vulkan::context_t>(window, 2, true);
 
     core::ImGui_init(window, ctx);
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
     std::vector<gpu_mesh_t> gpu_meshes;
 
-    auto material_descriptor_set_layout = gfx::vulkan::DescriptorSetLayout::Builder{}
+    auto material_descriptor_set_layout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build(ctx);
 
@@ -110,11 +110,11 @@ int main(int argc, char **argv) {
         .addAttachmentView(depthImage->imageView())
         .build(ctx, renderPass->renderPass(), width, height);
     
-    auto swapchainDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
+    auto swapchainDescriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build(ctx);
     
-    auto swapchainDescriptorSet = swapchainDescriptorSetLayout->newDescriptorSet();
+    auto swapchainDescriptorSet = swapchainDescriptorSetLayout->new_descriptor_set();
     swapchainDescriptorSet->write()
         .pushImageInfo(0, 1, colorImage->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
         .update();
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
         .addDescriptorSetLayout(swapchainDescriptorSetLayout)
         .addShader("../../assets/shaders/test2/swapchain/base.vert.spv")
         .addShader("../../assets/shaders/test2/swapchain/base.frag.spv")
-        .build(ctx, ctx->swapChainRenderPass());    
+        .build(ctx, ctx->swapchain_renderpass());    
 
     float targetFPS = 60.f;
     auto lastTime = std::chrono::system_clock::now();
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
         lastTime = currentTime;
         float dt = timeDifference.count() / float(1e6);
 
-        if (auto startFrame = ctx->startFrame()) {
+        if (auto startFrame = ctx->start_frame()) {
             auto [commandBuffer, currentIndex] = *startFrame;
 
             VkClearValue clearColor{};
@@ -152,17 +152,17 @@ int main(int argc, char **argv) {
             VkViewport swapChainViewPort{};
             swapChainViewPort.x = 0;
             swapChainViewPort.y = 0;
-            swapChainViewPort.width = static_cast<float>(ctx->swapChainExtent().width);
-            swapChainViewPort.height = static_cast<float>(ctx->swapChainExtent().height);
+            swapChainViewPort.width = static_cast<float>(ctx->swapchain_extent().width);
+            swapChainViewPort.height = static_cast<float>(ctx->swapchain_extent().height);
             swapChainViewPort.minDepth = 0;
             swapChainViewPort.maxDepth = 1;
             VkRect2D swapChainScissor{};
             swapChainScissor.offset = {0, 0};
-            swapChainScissor.extent = ctx->swapChainExtent();
+            swapChainScissor.extent = ctx->swapchain_extent();
 
             renderPass->begin(commandBuffer, framebuffer->framebuffer(), VkRect2D{
                 .offset = {0, 0},
-                .extent = ctx->swapChainExtent(),
+                .extent = ctx->swapchain_extent(),
             }, {
                 clearColor,
                 clearDepth,
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 
             renderPass->end(commandBuffer);
 
-            ctx->beginSwapChainRenderPass(commandBuffer, clearColor);
+            ctx->begin_swapchain_renderpass(commandBuffer, clearColor);
             vkCmdSetViewport(commandBuffer, 0, 1, &swapChainViewPort);
             vkCmdSetScissor(commandBuffer, 0, 1, &swapChainScissor);
             swapchainPipeline->bind(commandBuffer);
@@ -183,14 +183,14 @@ int main(int argc, char **argv) {
             ImGui::End();
 
             core::ImGui_endframe(commandBuffer);
-            ctx->endSwapChainRenderPass(commandBuffer);
+            ctx->end_swapchain_renderpass(commandBuffer);
 
-            ctx->endFrame(commandBuffer);
+            ctx->end_frame(commandBuffer);
         }
         core::clear_frame_function_times();
     }
 
-    ctx->waitIdle();
+    ctx->wait_idle();
 
     core::ImGui_shutdown();
 

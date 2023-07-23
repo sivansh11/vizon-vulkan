@@ -49,7 +49,7 @@ uint32_t numChannels(VkFormat format) {
     return 0;
 }
 
-core::ref<Image> Image::Builder::build2D(core::ref<Context> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
+core::ref<Image> Image::Builder::build2D(core::ref<context_t> context, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags imageUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -58,7 +58,7 @@ core::ref<Image> Image::Builder::build2D(core::ref<Context> context, uint32_t wi
     imageCreateInfo.extent.depth = 1;
     if (enableMipMaps) {
         VkImageFormatProperties imageFormatProperties{};
-        vkGetPhysicalDeviceImageFormatProperties(context->physicalDevice(), VK_FORMAT_R8G8B8A8_SRGB, VkImageType::VK_IMAGE_TYPE_2D, VkImageTiling::VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
+        vkGetPhysicalDeviceImageFormatProperties(context->physical_device(), VK_FORMAT_R8G8B8A8_SRGB, VkImageType::VK_IMAGE_TYPE_2D, VkImageTiling::VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0, &imageFormatProperties);
         imageCreateInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
         imageCreateInfo.mipLevels = std::min(imageFormatProperties.maxMipLevels, imageCreateInfo.mipLevels);
     } else    
@@ -84,7 +84,7 @@ core::ref<Image> Image::Builder::build2D(core::ref<Context> context, uint32_t wi
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryAllocateInfo.allocationSize = memoryRequirements.size;
-    memoryAllocateInfo.memoryTypeIndex = context->findMemoryType(memoryRequirements.memoryTypeBits, memoryTypeIndex);
+    memoryAllocateInfo.memoryTypeIndex = context->find_memory_type(memoryRequirements.memoryTypeBits, memoryTypeIndex);
 
     VkDeviceMemory deviceMemory{};
 
@@ -156,7 +156,7 @@ core::ref<Image> Image::Builder::build2D(core::ref<Context> context, uint32_t wi
     return core::make_ref<Image>(context, imageInfo);
 }
 
-core::ref<Image> Image::Builder::loadFromPath(core::ref<Context> context, const std::filesystem::path& filePath, VkFormat format) {
+core::ref<Image> Image::Builder::loadFromPath(core::ref<context_t> context, const std::filesystem::path& filePath, VkFormat format) {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);  
     stbi_uc *pixels = stbi_load(filePath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -214,7 +214,7 @@ VkImageAspectFlags Image::Builder::getImageAspect(VkFormat format) {
     return VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
-Image::Image(core::ref<Context> context, const ImageInfo& imageInfo) 
+Image::Image(core::ref<context_t> context, const ImageInfo& imageInfo) 
   : m_context(context),
     m_imageInfo(imageInfo) {
     TRACE("Created image");
@@ -233,11 +233,11 @@ Image::~Image() {
 }
 
 void Image::transitionLayout(VkImageLayout oldLayout, VkImageLayout newLayout) {
-    auto commandBuffer = m_context->startSingleUseCommandBuffer();
+    auto commandBuffer = m_context->start_single_use_command_buffer();
 
     transitionLayout(commandBuffer, oldLayout, newLayout);
     
-    m_context->endSingleUseCommandBuffer(commandBuffer);
+    m_context->end_single_use_command_buffer(commandBuffer);
 }
 
 void Image::transitionLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) {
@@ -430,17 +430,17 @@ void Image::genMipMaps(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, V
 }
 
 void Image::genMipMaps(VkImageLayout oldLayout, VkImageLayout newLayout) {
-    auto commandBuffer = m_context->startSingleUseCommandBuffer();
+    auto commandBuffer = m_context->start_single_use_command_buffer();
     genMipMaps(commandBuffer, oldLayout, newLayout);
-    m_context->endSingleUseCommandBuffer(commandBuffer);
+    m_context->end_single_use_command_buffer(commandBuffer);
 }
 
-void Image::copyBufferToImage(core::ref<Context> context, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
-    auto commandBuffer = context->startSingleUseCommandBuffer();
+void Image::copyBufferToImage(core::ref<context_t> context, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {
+    auto commandBuffer = context->start_single_use_command_buffer();
 
     copyBufferToImage(commandBuffer, buffer, image, bufferImageCopy);
 
-    context->endSingleUseCommandBuffer(commandBuffer);
+    context->end_single_use_command_buffer(commandBuffer);
 }
 
 void Image::copyBufferToImage(VkCommandBuffer commandBuffer, buffer_t& buffer, Image& image, VkBufferImageCopy bufferImageCopy) {

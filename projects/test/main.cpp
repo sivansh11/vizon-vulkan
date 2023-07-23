@@ -26,7 +26,7 @@
 
 int main(int argc, char **argv) {
     auto window = std::make_shared<core::Window>("VIZON-vulkan", 800, 600);
-    auto context = std::make_shared<gfx::vulkan::Context>(window, 2, true);
+    auto context = std::make_shared<gfx::vulkan::context_t>(window, 2, true);
     auto dispatcher = std::make_shared<event::Dispatcher>();
 
     core::Material::init(context);
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
         model.loadFromPath("../../assets/models/Sponza/glTF/Sponza.gltf");
     }
 
-    auto test = gfx::vulkan::DescriptorSetLayout::Builder{}
+    auto test = gfx::vulkan::descriptor_set_layout_builder_t{}
         .build(context);
 
     // double lastTime = glfwGetTime();

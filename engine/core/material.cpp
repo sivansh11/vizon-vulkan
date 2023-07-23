@@ -4,15 +4,15 @@
 
 namespace core {
 
-static core::ref<gfx::vulkan::DescriptorSetLayout> globalMaterialDescriptorSetLayout{nullptr};
+static core::ref<gfx::vulkan::descriptor_set_layout_t> globalMaterialDescriptorSetLayout{nullptr};
 
-core::ref<gfx::vulkan::DescriptorSetLayout> Material::getMaterialDescriptorSetLayout() {
+core::ref<gfx::vulkan::descriptor_set_layout_t> Material::getMaterialDescriptorSetLayout() {
     assert(globalMaterialDescriptorSetLayout);
     return globalMaterialDescriptorSetLayout;
 }
 
-void Material::init(core::ref<gfx::vulkan::Context> context) {
-    globalMaterialDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
+void Material::init(core::ref<gfx::vulkan::context_t> context) {
+    globalMaterialDescriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         // .addLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         // .addLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)

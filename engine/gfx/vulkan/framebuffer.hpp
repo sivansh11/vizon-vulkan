@@ -12,18 +12,18 @@ class Framebuffer {
 public:
     struct Builder {
         Builder& addAttachmentView(VkImageView view);
-        core::ref<Framebuffer> build(core::ref<Context> context, VkRenderPass renderPass, uint32_t width, uint32_t height);
+        core::ref<Framebuffer> build(core::ref<context_t> context, VkRenderPass renderPass, uint32_t width, uint32_t height);
 
         std::vector<VkImageView> attachments{};
     };
 
-    Framebuffer(core::ref<Context> context, VkFramebuffer framebuffer);
+    Framebuffer(core::ref<context_t> context, VkFramebuffer framebuffer);
     ~Framebuffer();
 
     VkFramebuffer& framebuffer() { return m_framebuffer; }
     
 private:
-    core::ref<Context> m_context;
+    core::ref<context_t> m_context;
     VkFramebuffer m_framebuffer;
 };
 

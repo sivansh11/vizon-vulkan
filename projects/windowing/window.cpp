@@ -19,7 +19,7 @@ static void ExtractAndConvertToRGBA(const SL::Screen_Capture::Image &img, uint8_
 	}
 }
 
-Window::Window(std::shared_ptr<gfx::vulkan::Context> context, const std::string& name) 
+Window::Window(std::shared_ptr<gfx::vulkan::context_t> context, const std::string& name) 
   : m_context(context) {
 
 	auto windows = SL::Screen_Capture::GetWindows();

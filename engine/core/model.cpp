@@ -101,7 +101,7 @@ model_t load_model_from_path(const std::filesystem::path& file_path) {
     return model_loading_info._model;
 }
 
-Model::Model(core::ref<gfx::vulkan::Context> context) 
+Model::Model(core::ref<gfx::vulkan::context_t> context) 
   : m_context(context) {
 
 }
@@ -197,7 +197,7 @@ core::ref<Material> Model::processMaterial(aiMaterial *material) {
 
     core::ref<Material> mat = core::make_ref<Material>();
 
-    mat->descriptorSet = gfx::vulkan::DescriptorSet::Builder{}
+    mat->descriptorSet = gfx::vulkan::descriptor_set_builder_t{}
         .build(m_context, Material::getMaterialDescriptorSetLayout());
     
     // load all the textures and parameters

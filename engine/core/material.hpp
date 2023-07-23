@@ -9,7 +9,7 @@
 namespace core {
 
 struct Material {
-    core::ref<gfx::vulkan::DescriptorSet> descriptorSet;
+    core::ref<gfx::vulkan::descriptor_set_t> descriptorSet;
 
     core::ref<gfx::vulkan::Image> diffuse;
     // core::ref<gfx::vulkan::Image> specular;
@@ -17,8 +17,8 @@ struct Material {
 
     void update();
 
-    static void init(core::ref<gfx::vulkan::Context> context);
-    static core::ref<gfx::vulkan::DescriptorSetLayout> getMaterialDescriptorSetLayout();
+    static void init(core::ref<gfx::vulkan::context_t> context);
+    static core::ref<gfx::vulkan::descriptor_set_layout_t> getMaterialDescriptorSetLayout();
     static void destroy();
 };
 

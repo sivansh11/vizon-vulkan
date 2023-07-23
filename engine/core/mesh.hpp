@@ -29,7 +29,7 @@ struct Vertex {
 
 class Mesh {
 public:
-    Mesh(core::ref<gfx::vulkan::Context> context, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+    Mesh(core::ref<gfx::vulkan::context_t> context, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
     ~Mesh();
 
     void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool withMaterial);

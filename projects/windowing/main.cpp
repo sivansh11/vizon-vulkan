@@ -29,7 +29,7 @@
 
 int main(int argc, char **argv) {
     auto window = core::make_ref<core::Window>("VIZON-vulkan", 800, 600);
-    auto context = core::make_ref<gfx::vulkan::Context>(window, 2, true);
+    auto context = core::make_ref<gfx::vulkan::context_t>(window, 2, true);
     auto dispatcher = core::make_ref<event::Dispatcher>();
     core::Material::init(context);
 
@@ -37,11 +37,11 @@ int main(int argc, char **argv) {
 
     EditorCamera editorCamera{window};
     
-    auto globalDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
+    auto globalDescriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build(context);
 
-    auto perObjectDescriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
+    auto perObjectDescriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build(context);    
 
@@ -94,9 +94,9 @@ int main(int argc, char **argv) {
         .build(context, renderpass->renderPass(), width, height);
     
     std::vector<std::shared_ptr<gfx::vulkan::buffer_t>> globalUniformBufferObject;
-    std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>> globalUniformBufferDescriptorSet;
+    std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>> globalUniformBufferDescriptorSet;
     for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-        globalUniformBufferDescriptorSet.push_back(gfx::vulkan::DescriptorSet::Builder{}
+        globalUniformBufferDescriptorSet.push_back(gfx::vulkan::descriptor_set_builder_t{}
             .build(context, globalDescriptorSetLayout));
         globalUniformBufferObject.push_back(gfx::vulkan::buffer_builder_t{}
             .build(context, sizeof(GlobalUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -105,11 +105,11 @@ int main(int argc, char **argv) {
             .update();
     }
 
-    auto swapChain_descriptorSetLayout = gfx::vulkan::DescriptorSetLayout::Builder{}
+    auto swapChain_descriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)
         .build(context);
 
-    auto swapChain_descriptor = gfx::vulkan::DescriptorSet::Builder{}
+    auto swapChain_descriptor = gfx::vulkan::descriptor_set_builder_t{}
         .build(context, swapChain_descriptorSetLayout);
 
     auto swapChain_pipeline = gfx::vulkan::Pipeline::Builder{}
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
         .addDescriptorSetLayout(swapChain_descriptorSetLayout)
         .addShader("../../assets/shaders/swapchain/base.vert.spv")
         .addShader("../../assets/shaders/swapchain/base.frag.spv")
-        .build(context, context->swapChainRenderPass());
+        .build(context, context->swapchain_renderpass());
 
     swapChain_descriptor->write()
         .pushImageInfo(0, 1, imageColor->descriptorInfo(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
@@ -149,16 +149,16 @@ int main(int argc, char **argv) {
         auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = core::make_ref<Window>(context, "firefox");
         auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = core::make_ref<core::Material>();
         mat->diffuse = wind->image();
-        mat->descriptorSet = gfx::vulkan::DescriptorSet::Builder{}
+        mat->descriptorSet = gfx::vulkan::descriptor_set_builder_t{}
             .build(context, core::Material::getMaterialDescriptorSetLayout());
         mat->descriptorSet->write()
             .pushImageInfo(0, 1, mat->diffuse->descriptorInfo(VK_IMAGE_LAYOUT_GENERAL))
             .update();
         mesh->material = mat;
-        auto& descriptor = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>>>(ent);
+        auto& descriptor = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>>>(ent);
         auto& buffer = scene.emplace<std::vector<std::shared_ptr<gfx::vulkan::buffer_t>>>(ent);
         for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
-            descriptor.push_back(gfx::vulkan::DescriptorSet::Builder{}
+            descriptor.push_back(gfx::vulkan::descriptor_set_builder_t{}
                 .build(context, perObjectDescriptorSetLayout));
             buffer.push_back(gfx::vulkan::buffer_builder_t{}
                 .build(context, sizeof(PerObjectUniformBufferStruct), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    context->addResizeCallBack([&]() {
+    context->add_resize_callback([&]() {
         auto [width, height] = window->getSize();
         imageColor = gfx::vulkan::Image::Builder{} 
             .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 
         editorCamera.onUpdate(dt.count() / 1e6);
 
-        if (auto startFrame = context->startFrame()) {
+        if (auto startFrame = context->start_frame()) {
             auto [commandBuffer, currentIndex] = *startFrame;
 
             VkClearValue clearColor{};
@@ -218,13 +218,13 @@ int main(int argc, char **argv) {
             VkViewport viewport{};
             viewport.x = 0.0f;
             viewport.y = 0.0f;
-            viewport.width = static_cast<float>(context->swapChainExtent().width);
-            viewport.height = static_cast<float>(context->swapChainExtent().height);
+            viewport.width = static_cast<float>(context->swapchain_extent().width);
+            viewport.height = static_cast<float>(context->swapchain_extent().height);
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
             VkRect2D scissor{};
             scissor.offset = {0, 0};
-            scissor.extent = context->swapChainExtent();
+            scissor.extent = context->swapchain_extent();
 
             GlobalUniformBufferStruct globalUniformBuffer{};
             globalUniformBuffer.projection = editorCamera.getProjection();
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
 
             renderpass->begin(commandBuffer, framebuffer->framebuffer(), VkRect2D{
                 .offset = {0, 0},
-                .extent = context->swapChainExtent(),
+                .extent = context->swapchain_extent(),
             }, {
                 clearColor,
                 clearDepth
@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipelineLayout(), 0, 1, &globalUniformBufferDescriptorSet[currentIndex]->descriptorSet(), 0, nullptr);
             for (auto [ent, mesh, transform, descriptor, buffer] : scene.view<std::shared_ptr<core::Mesh>, 
                                                                               core::Transform,
-                                                                              std::vector<std::shared_ptr<gfx::vulkan::DescriptorSet>>, 
+                                                                              std::vector<std::shared_ptr<gfx::vulkan::descriptor_set_t>>, 
                                                                               std::vector<std::shared_ptr<gfx::vulkan::buffer_t>>>().each()) {
                 PerObjectUniformBufferStruct perObjectUniformBuffer{};
                 perObjectUniformBuffer.model = transform.mat4();
@@ -263,16 +263,16 @@ int main(int argc, char **argv) {
 
             renderpass->end(commandBuffer);
 
-            context->beginSwapChainRenderPass(commandBuffer, clearColor);
+            context->begin_swapchain_renderpass(commandBuffer, clearColor);
     		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
             swapChain_pipeline->bind(commandBuffer);
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, swapChain_pipeline->pipelineLayout(), 0, 1, &swapChain_descriptor->descriptorSet(), 0, nullptr);
             vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-            context->endSwapChainRenderPass(commandBuffer);
+            context->end_swapchain_renderpass(commandBuffer);
 
-            context->endFrame(commandBuffer);
+            context->end_frame(commandBuffer);
         }
     }
 

@@ -54,9 +54,9 @@ Pipeline::Builder& Pipeline::Builder::addDynamicState(VkDynamicState state) {
     return *this;
 }
 
-Pipeline::Builder& Pipeline::Builder::addDescriptorSetLayout(core::ref<DescriptorSetLayout> descriptorSetLayout) {
+Pipeline::Builder& Pipeline::Builder::addDescriptorSetLayout(core::ref<descriptor_set_layout_t> descriptorSetLayout) {
     assert(descriptorSetLayout);
-    descriptorSetLayouts.push_back(descriptorSetLayout->descriptorSetLayout());
+    descriptorSetLayouts.push_back(descriptorSetLayout->descriptor_set_layout());
     return *this;
 }
 
@@ -115,7 +115,7 @@ Pipeline::Builder& Pipeline::Builder::setVertexInputAttributeDescriptionVector(c
 
 
 
-core::ref<Pipeline> Pipeline::Builder::build(core::ref<Context> context, VkRenderPass renderPass) {
+core::ref<Pipeline> Pipeline::Builder::build(core::ref<context_t> context, VkRenderPass renderPass) {
     std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStageCreateInfos{};
 
     VkPipelineBindPoint pipelineBindPoint;
@@ -171,14 +171,14 @@ core::ref<Pipeline> Pipeline::Builder::build(core::ref<Context> context, VkRende
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) context->swapChainExtent().width;
-    viewport.height = (float) context->swapChainExtent().height;
+    viewport.width = (float) context->swapchain_extent().width;
+    viewport.height = (float) context->swapchain_extent().height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = context->swapChainExtent();
+    scissor.extent = context->swapchain_extent();
 
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -262,7 +262,7 @@ core::ref<Pipeline> Pipeline::Builder::build(core::ref<Context> context, VkRende
     return core::make_ref<Pipeline>(context, pipelineLayout, pipeline, pipelineBindPoint);
 }
 
-Pipeline::Pipeline(core::ref<Context> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint) 
+Pipeline::Pipeline(core::ref<context_t> context, VkPipelineLayout pipelineLayout, VkPipeline pipeline, VkPipelineBindPoint pipelineBindPoint) 
   : m_context(context),
     m_pipelineLayout(pipelineLayout),
     m_pipeline(pipeline),
