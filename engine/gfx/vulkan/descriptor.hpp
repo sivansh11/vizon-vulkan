@@ -55,8 +55,9 @@ public:
 
     struct write_t {
         write_t(core::ref<context_t> context, VkDescriptorSet descriptor_set);
-        write_t& pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptor_image_info);
+        write_t& pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptor_image_info, VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
         write_t& pushBufferInfo(uint32_t binding, uint32_t count, const VkDescriptorBufferInfo& descriptor_buffer_info);
+        write_t& pushAccelerationStructureInfo(uint32_t binding, uint32_t count, const VkWriteDescriptorSetAccelerationStructureKHR& acceleration_set_info);
 
         void update();
 

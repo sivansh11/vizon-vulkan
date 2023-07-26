@@ -12,9 +12,9 @@ std::optional<texture_info_t> process_texture(model_loading_info_t& model_loadin
         material->GetTexture(type, i, &name);
         
         texture_info_t texture_info{};
-        texture_info._file_path = model_loading_info._file_path.parent_path();
-        texture_info._file_path /= name.C_Str();
-        texture_info._texture_type = texture_type;
+        texture_info.file_path = model_loading_info.file_path.parent_path();
+        texture_info.file_path /= name.C_Str();
+        texture_info.texture_type = texture_type;
         return { texture_info };
     }
     assert(false);
@@ -25,23 +25,32 @@ material_t process_material(model_loading_info_t& model_loading_info, aiMaterial
     material_t loaded_material;
 
     if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_DIFFUSE, texture_type_t::e_diffuse_map)) {
-        loaded_material._texture_infos.push_back(*texture_info);        
+        loaded_material.texture_infos.push_back(*texture_info);        
     }
 
     if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_NORMALS, texture_type_t::e_normal_map)) {
-        loaded_material._texture_infos.push_back(*texture_info);        
+        loaded_material.texture_infos.push_back(*texture_info);        
     }
 
     if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_SPECULAR, texture_type_t::e_specular_map)) {
-        loaded_material._texture_infos.push_back(*texture_info);        
+        loaded_material.texture_infos.push_back(*texture_info);        
     }  
+
+    aiColor3D diffuse_color;
+    material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse_color);
+
+    texture_info_t diffuse_texture_info{};
+    diffuse_texture_info.texture_type = texture_type_t::e_diffuse_color;
+    diffuse_texture_info.diffuse_color = glm::vec4(diffuse_color.r, diffuse_color.g, diffuse_color.b, 1);
+
+    loaded_material.texture_infos.push_back(diffuse_texture_info);
 
     return loaded_material;
 }
 
 mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, const aiScene *scene) {
     mesh_t loaded_mesh;
-    loaded_mesh._vertices.reserve(mesh->mNumVertices);
+    loaded_mesh.vertices.reserve(mesh->mNumVertices);
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         vertex_t vertex{};
 
@@ -60,17 +69,18 @@ mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, cons
         } else {
 
         }
-        loaded_mesh._vertices.push_back(vertex);
+        loaded_mesh.vertices.push_back(vertex);
     }
     
     for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
         aiFace& face = mesh->mFaces[i];
+        // model_loading_info.model.primitive_count += face.mNumIndices;
         for (uint32_t j = 0; j < face.mNumIndices; j++) {
-            loaded_mesh._indices.push_back(face.mIndices[j]);
+            loaded_mesh.indices.push_back(face.mIndices[j]);
         }
     }
 
-    loaded_mesh._material = process_material(model_loading_info, scene->mMaterials[mesh->mMaterialIndex]);
+    loaded_mesh.material = process_material(model_loading_info, scene->mMaterials[mesh->mMaterialIndex]);
     return loaded_mesh;
 }
 
@@ -79,7 +89,7 @@ void process_node(model_loading_info_t& model_loading_info, aiNode *node, const 
         process_node(model_loading_info, node->mChildren[i], scene);
     }
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
-        model_loading_info._model._meshes.push_back(process_mesh(model_loading_info, scene->mMeshes[node->mMeshes[i]], scene));
+        model_loading_info.model.meshes.push_back(process_mesh(model_loading_info, scene->mMeshes[node->mMeshes[i]], scene));
     }
 }
 
@@ -96,9 +106,9 @@ model_t load_model_from_path(const std::filesystem::path& file_path) {
     }
 
     model_loading_info_t model_loading_info{};
-    model_loading_info._file_path = file_path;
+    model_loading_info.file_path = file_path;
     process_node(model_loading_info, scene->mRootNode, scene);
-    return model_loading_info._model;
+    return model_loading_info.model;
 }
 
 Model::Model(core::ref<gfx::vulkan::context_t> context) 

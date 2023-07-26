@@ -261,8 +261,27 @@ void context_t::end_single_use_command_buffer(VkCommandBuffer command_buffer) {
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buffer;
 
-    vkQueueSubmit(_graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(_graphics_queue);
+    VkFenceCreateInfo fence_create_info{};
+    fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence single_use_command_complete_fence;
+    {
+        auto result = vkCreateFence(_device, &fence_create_info, nullptr, &single_use_command_complete_fence);
+        if (result != VK_SUCCESS) {
+            ERROR("Failed to create fence!");
+            std::terminate();
+        }
+    }
+
+    vkQueueSubmit(_graphics_queue, 1, &submit_info, single_use_command_complete_fence);
+    {
+        auto result = vkWaitForFences(_device, 1, &single_use_command_complete_fence, VK_TRUE, UINT64_MAX);
+        if (result != VK_SUCCESS) {
+            ERROR("Failed to wait for fence!");
+            std::terminate();
+        }
+    }
+
+    vkDestroyFence(_device, single_use_command_complete_fence, nullptr);
 
     vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
 }
@@ -843,6 +862,13 @@ void context_t::create_descriptor_pool() {
     VIZON_PROFILE_FUNCTION();
     std::vector<VkDescriptorPoolSize> pool_sizes{};
 
+    if (_raytracing) {
+        VkDescriptorPoolSize pool_size{};
+        pool_size.type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        pool_size.descriptorCount = 1000;
+        pool_sizes.push_back(pool_size);
+    }
+
     {
         VkDescriptorPoolSize pool_size{};
         pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -890,7 +916,7 @@ void context_t::create_descriptor_pool() {
     descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptor_pool_create_info.poolSizeCount = pool_sizes.size();
     descriptor_pool_create_info.pPoolSizes = pool_sizes.data();
-    descriptor_pool_create_info.maxSets = 1000 * 6;
+    descriptor_pool_create_info.maxSets = 1000 * 7;
 
     if (vkCreateDescriptorPool(_device, &descriptor_pool_create_info, nullptr, &_descriptor_pool) != VK_SUCCESS) {
         ERROR("Failed to create descriptor pool");

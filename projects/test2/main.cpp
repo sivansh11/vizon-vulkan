@@ -29,10 +29,13 @@
 #include <chrono>
 
 struct gpu_mesh_t {
-    core::ref<gfx::vulkan::buffer_t> _vertex_buffer;
-    core::ref<gfx::vulkan::buffer_t> _index_buffer;
-    core::ref<gfx::vulkan::descriptor_set_t> _material_descriptor_set;
-    uint32_t _index_count;
+    core::ref<gfx::vulkan::buffer_t> vertex_buffer;
+    core::ref<gfx::vulkan::buffer_t> index_buffer;
+    VkAccelerationStructureKHR bottom_level_acceleration_structure;
+    VkDeviceAddress bottom_level_acceleration_structure_device_address;
+    core::ref<gfx::vulkan::buffer_t> bottom_level_acceleration_structure_buffer;
+    core::ref<gfx::vulkan::descriptor_set_t> material_descriptor_set;
+    uint32_t index_count;
 };
 
 struct set_0_t {
@@ -136,7 +139,7 @@ int main(int argc, char **argv) {
     }
 
     auto gpu_timer = core::make_ref<gfx::vulkan::gpu_timer_t>(ctx);
-    
+
     auto swapchain_descriptor_set_layout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build(ctx);
@@ -158,65 +161,72 @@ int main(int argc, char **argv) {
 
     auto model = core::load_model_from_path("../../assets/models/Sponza/glTF/Sponza.gltf");
     {
-        for (auto mesh : model._meshes) {
+        for (auto mesh : model.meshes) {
             gpu_mesh_t gpu_mesh{};
             core::ref<gfx::vulkan::buffer_t> staging_buffer;
 
             // vertex buffer
             staging_buffer = gfx::vulkan::buffer_builder_t{}
                 .build(ctx,
-                    mesh._vertices.size() * sizeof(core::vertex_t),
+                    mesh.vertices.size() * sizeof(core::vertex_t),
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-            gpu_mesh._vertex_buffer = gfx::vulkan::buffer_builder_t{}
+            gpu_mesh.vertex_buffer = gfx::vulkan::buffer_builder_t{}
                 .build(ctx,
-                    mesh._vertices.size() * sizeof(core::vertex_t),
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    mesh.vertices.size() * sizeof(core::vertex_t),
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            std::memcpy(staging_buffer->map(), mesh._vertices.data(), mesh._vertices.size() * sizeof(core::vertex_t));
+            std::memcpy(staging_buffer->map(), mesh.vertices.data(), mesh.vertices.size() * sizeof(core::vertex_t));
             staging_buffer->unmap();
 
-            gfx::vulkan::buffer_t::copy(ctx, *staging_buffer, *gpu_mesh._vertex_buffer, VkBufferCopy{
-                .size = mesh._vertices.size() * sizeof(core::vertex_t)
+            gfx::vulkan::buffer_t::copy(ctx, *staging_buffer, *gpu_mesh.vertex_buffer, VkBufferCopy{
+                .size = mesh.vertices.size() * sizeof(core::vertex_t)
             });
 
             // index buffer
             staging_buffer = gfx::vulkan::buffer_builder_t{}
                 .build(ctx,
-                    mesh._indices.size() * sizeof(uint32_t),
+                    mesh.indices.size() * sizeof(uint32_t),
                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-            gpu_mesh._index_buffer = gfx::vulkan::buffer_builder_t{}
+            gpu_mesh.index_buffer = gfx::vulkan::buffer_builder_t{}
                 .build(ctx,
-                    mesh._indices.size() * sizeof(uint32_t),
-                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                    mesh.indices.size() * sizeof(uint32_t),
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            std::memcpy(staging_buffer->map(), mesh._indices.data(), mesh._indices.size() * sizeof(uint32_t));
+            std::memcpy(staging_buffer->map(), mesh.indices.data(), mesh.indices.size() * sizeof(uint32_t));
             staging_buffer->unmap();
 
-            gfx::vulkan::buffer_t::copy(ctx, *staging_buffer, *gpu_mesh._index_buffer, VkBufferCopy{
-                .size = mesh._indices.size() * sizeof(uint32_t)
+            gfx::vulkan::buffer_t::copy(ctx, *staging_buffer, *gpu_mesh.index_buffer, VkBufferCopy{
+                .size = mesh.indices.size() * sizeof(uint32_t)
             });
-            gpu_mesh._index_count = mesh._indices.size();
+            gpu_mesh.index_count = mesh.indices.size();
 
             // material
-            gpu_mesh._material_descriptor_set = material_descriptor_set_layout->new_descriptor_set();
-            auto it = std::find_if(mesh._material._texture_infos.begin(), mesh._material._texture_infos.end(), [](const core::texture_info_t& texture_info) {
-                return texture_info._texture_type == core::texture_type_t::e_diffuse_map;
+            gpu_mesh.material_descriptor_set = material_descriptor_set_layout->new_descriptor_set();
+            auto it = std::find_if(mesh.material.texture_infos.begin(), mesh.material.texture_infos.end(), [](const core::texture_info_t& texture_info) {
+                return texture_info.texture_type == core::texture_type_t::e_diffuse_map;
             });
-            if (it != mesh._material._texture_infos.end()) {
+            if (it != mesh.material.texture_infos.end()) {
                 auto image = gfx::vulkan::image_builder_t{}
-                    .loadFromPath(ctx, it->_file_path);
+                    .loadFromPath(ctx, it->file_path);
                 loaded_images.push_back(image);
-                gpu_mesh._material_descriptor_set->write()
+                gpu_mesh.material_descriptor_set->write()
                     .pushImageInfo(0, 1, image->descriptor_info(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
                     .update();
             } else {
-                assert(false);
+                // miss textures
+                auto image = gfx::vulkan::image_builder_t{}
+                    .loadFromPath(ctx, "../../assets/textures/pebbles-stones-white-grey-background-3d-style-texture-vector.jpg");
+                loaded_images.push_back(image);
+                gpu_mesh.material_descriptor_set->write()
+                    .pushImageInfo(0, 1, image->descriptor_info(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
+                    .update();
+                // assert(false);
             }
             gpu_meshes.push_back(gpu_mesh);
         }
@@ -286,11 +296,11 @@ int main(int argc, char **argv) {
             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline_layout(), 0, 2, sets, 0, nullptr);
             pipeline->bind(command_buffer);
             for (auto gpu_mesh : gpu_meshes) {
-                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline_layout(), 2, 1, &gpu_mesh._material_descriptor_set->descriptor_set(), 0, nullptr);
+                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline_layout(), 2, 1, &gpu_mesh.material_descriptor_set->descriptor_set(), 0, nullptr);
                 VkDeviceSize offsets{0};
-                vkCmdBindVertexBuffers(command_buffer, 0, 1, &gpu_mesh._vertex_buffer->buffer(), &offsets);
-                vkCmdBindIndexBuffer(command_buffer, gpu_mesh._index_buffer->buffer(), offsets, VK_INDEX_TYPE_UINT32);
-                vkCmdDrawIndexed(command_buffer, gpu_mesh._index_count, 1, 0, 0, 0);
+                vkCmdBindVertexBuffers(command_buffer, 0, 1, &gpu_mesh.vertex_buffer->buffer(), &offsets);
+                vkCmdBindIndexBuffer(command_buffer, gpu_mesh.index_buffer->buffer(), offsets, VK_INDEX_TYPE_UINT32);
+                vkCmdDrawIndexed(command_buffer, gpu_mesh.index_count, 1, 0, 0, 0);
             }
             gpu_timer->end(command_buffer);
             renderpass->end(command_buffer);

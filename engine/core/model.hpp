@@ -31,30 +31,32 @@ enum texture_type_t {
     e_diffuse_map,
     e_specular_map,
     e_normal_map,
+    e_diffuse_color,
 };
 
 struct texture_info_t {
-    texture_type_t _texture_type;
-    std::filesystem::path _file_path;
+    texture_type_t texture_type;
+    std::filesystem::path file_path;
+    glm::vec4 diffuse_color;
 };
 
 struct material_t {
-    std::vector<texture_info_t> _texture_infos;
+    std::vector<texture_info_t> texture_infos;
 };
 
 struct mesh_t {
-    std::vector<vertex_t> _vertices;
-    std::vector<uint32_t> _indices; 
-    material_t _material;
+    std::vector<vertex_t> vertices;
+    std::vector<uint32_t> indices; 
+    material_t material;
 };
 
 struct model_t {
-    std::vector<mesh_t> _meshes;
+    std::vector<mesh_t> meshes;
 };
 
 struct model_loading_info_t {
-    std::filesystem::path _file_path;
-    model_t _model;
+    std::filesystem::path file_path;
+    model_t model;
 };
 
 std::optional<texture_info_t> process_texture(model_loading_info_t& model_loading_info, aiMaterial *material, aiTextureType type, texture_type_t texture_type);

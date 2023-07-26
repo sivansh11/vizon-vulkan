@@ -6,10 +6,20 @@
 
 #include <filesystem>
 #include <vector>
+#include <fstream>
 
 namespace gfx {
 
 namespace vulkan {
+
+namespace utils {
+
+static std::vector<char> read_file(const std::filesystem::path& filename);
+
+} // namespace utils
+
+
+VkShaderModule load_shader_module(core::ref<gfx::vulkan::context_t> context, const std::filesystem::path& shader_path);
 
 class pipeline_t;
 

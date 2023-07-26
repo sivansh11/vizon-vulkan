@@ -141,6 +141,7 @@ private:
     core::ref<core::Window> _window;
 
     friend class buffer_builder_t;
+    friend class pipeline_builder_t;
     const bool _raytracing;
     const bool _validation;
     VkPhysicalDeviceProperties _physical_device_properties{};

@@ -9,6 +9,10 @@ namespace gfx {
 
 namespace vulkan {
 
+inline uint32_t aligned_size(uint32_t size, uint32_t alignment) {
+    return (size + alignment - 1) & ~(alignment - 1);
+}
+
 class buffer_t {
 public:
 
@@ -33,13 +37,22 @@ public:
     static void copy(core::ref<context_t> context, buffer_t& src_buffer, buffer_t& dst_buffer, const VkBufferCopy& buffer_copy);
 
     VkBuffer& buffer() { return _buffer; }
-    VkDeviceMemory& device_memory() { return _deviceMemory; }
+    VkDeviceMemory& device_memory() { return _device_memory; }
+    VkDeviceAddress& device_address() {
+        VkBufferDeviceAddressInfo buffer_device_address_info{};
+        buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        buffer_device_address_info.pNext = NULL;
+        buffer_device_address_info.buffer = _buffer;
+        _device_address = vkGetBufferDeviceAddress(_context->device(), &buffer_device_address_info);
+        return _device_address;
+    }
 
 private:
     void *_mapped{nullptr};
     core::ref<context_t> _context;
     VkBuffer _buffer;
-    VkDeviceMemory _deviceMemory;
+    VkDeviceMemory _device_memory;
+    VkDeviceAddress _device_address;
 };
 
 struct buffer_builder_t {
@@ -55,7 +68,7 @@ struct buffer_builder_t {
 //         VkBufferUsageFlags _buffer_usage /* vulkan buffer usage flags */;
 //         VkMemoryPropertyFlags _memory_property /* vulkan device memory property flags */;
 //         VkBuffer _buffer /* vulkan buffer handle */;
-//         VkDeviceMemory _deviceMemory /* vulkan device memory handle */;
+//         VkDeviceMemory _device_memory /* vulkan device memory handle */;
 //     };
     
 //     static buffer_t make_buffer(core::ref<vulkan::Context> context, VkDeviceSize size, VkBufferUsageFlags buffer_usage, VkMemoryPropertyFlags memory_property);

@@ -50,20 +50,20 @@ core::ref<buffer_t> buffer_builder_t::build(core::ref<context_t> context, VkDevi
 buffer_t::buffer_t(core::ref<context_t> context, VkBuffer buffer, VkDeviceMemory device_memory) 
   : _context(context),
     _buffer(buffer),
-    _deviceMemory(device_memory) {
+    _device_memory(device_memory) {
     TRACE("Created buffer");
 }
 
 buffer_t::~buffer_t() {
     vkDestroyBuffer(_context->device(), _buffer, nullptr);
-    vkFreeMemory(_context->device(), _deviceMemory, nullptr);
+    vkFreeMemory(_context->device(), _device_memory, nullptr);
     TRACE("Destoryed buffer");
 }
 
 void buffer_t::invalidate(VkDeviceSize offset, VkDeviceSize size) {
     VkMappedMemoryRange mappedMemoryRange{};
     mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    mappedMemoryRange.memory = _deviceMemory;
+    mappedMemoryRange.memory = _device_memory;
     mappedMemoryRange.offset = offset;
     mappedMemoryRange.size = size;
     vkInvalidateMappedMemoryRanges(_context->device(), 1, &mappedMemoryRange);
@@ -72,7 +72,7 @@ void buffer_t::invalidate(VkDeviceSize offset, VkDeviceSize size) {
 void buffer_t::flush(VkDeviceSize offset, VkDeviceSize size) {
     VkMappedMemoryRange mappedMemoryRange{};
     mappedMemoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    mappedMemoryRange.memory = _deviceMemory;
+    mappedMemoryRange.memory = _device_memory;
     mappedMemoryRange.offset = offset;
     mappedMemoryRange.size = size;
     vkFlushMappedMemoryRanges(_context->device(), 1, &mappedMemoryRange);
@@ -80,13 +80,13 @@ void buffer_t::flush(VkDeviceSize offset, VkDeviceSize size) {
 
 void *buffer_t::map(VkDeviceSize offset, VkDeviceSize size) {
     if (_mapped) return _mapped;
-    vkMapMemory(_context->device(), _deviceMemory, offset, size, 0, &_mapped);
+    vkMapMemory(_context->device(), _device_memory, offset, size, 0, &_mapped);
     return _mapped;
 }
 
 void buffer_t::unmap() {
     if (!_mapped) return;
-    vkUnmapMemory(_context->device(), _deviceMemory);
+    vkUnmapMemory(_context->device(), _device_memory);
 }
 
 void buffer_t::copy(core::ref<context_t> context, buffer_t& src_buffer, buffer_t& dst_buffer, const VkBufferCopy& buffer_copy) {

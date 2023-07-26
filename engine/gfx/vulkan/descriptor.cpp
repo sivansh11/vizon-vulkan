@@ -105,12 +105,12 @@ descriptor_set_t::write_t& descriptor_set_t::write() {
     return *new write_t(_context, _descriptor_set);    
 }
 
-descriptor_set_t::write_t& descriptor_set_t::write_t::pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptor_image_info) {
+descriptor_set_t::write_t& descriptor_set_t::write_t::pushImageInfo(uint32_t binding, uint32_t count, const VkDescriptorImageInfo& descriptor_image_info, VkDescriptorType type) {
     VkWriteDescriptorSet write_descriptor_set{};
     write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write_descriptor_set.dstBinding = binding;
     write_descriptor_set.descriptorCount = count;
-    write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write_descriptor_set.descriptorType = type;
     write_descriptor_set.dstSet = descriptor_set;
     write_descriptor_set.pImageInfo = &descriptor_image_info;
     writes.push_back(write_descriptor_set);
@@ -125,6 +125,18 @@ descriptor_set_t::write_t& descriptor_set_t::write_t::pushBufferInfo(uint32_t bi
     write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     write_descriptor_set.dstSet = descriptor_set;
     write_descriptor_set.pBufferInfo = &descriptor_buffe_info;
+    writes.push_back(write_descriptor_set);
+    return *this;
+}
+
+descriptor_set_t::write_t& descriptor_set_t::write_t::pushAccelerationStructureInfo(uint32_t binding, uint32_t count, const VkWriteDescriptorSetAccelerationStructureKHR& acceleration_set_info) {
+    VkWriteDescriptorSet write_descriptor_set{};
+    write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write_descriptor_set.pNext = &acceleration_set_info;
+    write_descriptor_set.dstBinding = binding;
+    write_descriptor_set.descriptorCount = count;
+    write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    write_descriptor_set.dstSet = descriptor_set;
     writes.push_back(write_descriptor_set);
     return *this;
 }
