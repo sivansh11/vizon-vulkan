@@ -391,6 +391,7 @@ void context_t::push_required_device_extensions() {
         _device_extensions.push_back(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
         _device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
         _device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        _device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
     }
 }
 
@@ -583,6 +584,11 @@ void context_t::create_logical_device() {
             .rayTracingPipelineShaderGroupHandleCaptureReplayMixed = VK_FALSE,
             .rayTracingPipelineTraceRaysIndirect = VK_FALSE,
             .rayTraversalPrimitiveCulling = VK_FALSE};
+    VkPhysicalDeviceRayQueryFeaturesKHR physical_device_ray_query_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
+        .pNext = &physical_device_raytracing_pipeline_features,
+        .rayQuery = VK_TRUE};
+
     VkPhysicalDeviceFeatures device_features = {.geometryShader = VK_TRUE};
 
     VkDeviceCreateInfo device_create_info{};
@@ -592,7 +598,7 @@ void context_t::create_logical_device() {
     device_create_info.pEnabledFeatures = &device_features;
     device_create_info.enabledExtensionCount = 0;
     if (_raytracing)
-        device_create_info.pNext = &physical_device_raytracing_pipeline_features;
+        device_create_info.pNext = &physical_device_ray_query_features;
 
     if (_validation) 
         push_device_validation_layers();

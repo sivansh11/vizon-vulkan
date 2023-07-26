@@ -477,6 +477,64 @@ int main(int argc, char **argv) {
         .pushImageInfo(0, 1, image->descriptor_info(VK_IMAGE_LAYOUT_GENERAL))
         .update();
 
+    auto temp_test_renderpass = renderpass_builder_t{}
+        .add_color_attachment(VkAttachmentDescription{
+            .format = VK_FORMAT_R8G8B8A8_SNORM,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,            
+        })
+        .build(ctx);
+
+    auto temp_test_image = image_builder_t{}
+        .build2D(ctx, width, height, VK_FORMAT_R8G8B8A8_SNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    
+    auto temp_test_framebuffer = framebuffer_builder_t{}
+        .add_attachment_view(temp_test_image->image_view())
+        .build(ctx, temp_test_renderpass->renderpass(), width, height);
+
+    auto temp_test_descriptor_set_layout = descriptor_set_layout_builder_t{}
+        .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build(ctx);
+
+    auto temp_test_descriptor_set = temp_test_descriptor_set_layout->new_descriptor_set();
+
+    struct properties_t {
+        int width = width;
+        int height = height;
+    } properties;
+
+    auto properties_ubo = buffer_builder_t{}
+        .build(ctx, sizeof(properties), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    
+    std::memcpy(properties_ubo->map(), &properties, sizeof(properties));
+    properties_ubo->unmap();
+
+    temp_test_descriptor_set->write()
+        .pushAccelerationStructureInfo(0, 1, VkWriteDescriptorSetAccelerationStructureKHR{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            .accelerationStructureCount = 1,
+            .pAccelerationStructures = &tlas.acceleration_structure
+        })
+        .pushBufferInfo(1, 1, properties_ubo->descriptor_info())
+        .update();
+    
+    auto temp_test_pipeline = pipeline_builder_t{}
+        .add_default_color_blend_attachment_state()
+        .add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
+        .add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
+        .add_descriptor_set_layout(temp_test_descriptor_set_layout)
+        .add_shader("../../assets/shaders/test3/test_new_rt/shader.vert.spv")
+        .add_shader("../../assets/shaders/test3/test_new_rt/shader.frag.spv")
+        .build(ctx, temp_test_renderpass->renderpass());
+
+    swapChain_descriptor_set->write()
+        .pushImageInfo(0, 1, temp_test_image->descriptor_info(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
+        .update();
+
     EditorCamera editor_camera{window};
 
     float target_FPS = 60.f;
@@ -518,34 +576,34 @@ int main(int argc, char **argv) {
             swapchain_scissor.offset = {0, 0};
             swapchain_scissor.extent = ctx->swapchain_extent();
 
-            VkStridedDeviceAddressRegionKHR rgen_shader_sbt_entry{};
-            rgen_shader_sbt_entry.deviceAddress = rgen_shader_binding_table->device_address();
-            rgen_shader_sbt_entry.stride = handle_size_aligned;
-            rgen_shader_sbt_entry.size = handle_size_aligned;
+            // VkStridedDeviceAddressRegionKHR rgen_shader_sbt_entry{};
+            // rgen_shader_sbt_entry.deviceAddress = rgen_shader_binding_table->device_address();
+            // rgen_shader_sbt_entry.stride = handle_size_aligned;
+            // rgen_shader_sbt_entry.size = handle_size_aligned;
             
-            VkStridedDeviceAddressRegionKHR rmiss_shader_sbt_entry{};
-            rmiss_shader_sbt_entry.deviceAddress = rmiss_shader_binding_table->device_address();
-            rmiss_shader_sbt_entry.stride = handle_size_aligned;
-            rmiss_shader_sbt_entry.size = handle_size_aligned;
+            // VkStridedDeviceAddressRegionKHR rmiss_shader_sbt_entry{};
+            // rmiss_shader_sbt_entry.deviceAddress = rmiss_shader_binding_table->device_address();
+            // rmiss_shader_sbt_entry.stride = handle_size_aligned;
+            // rmiss_shader_sbt_entry.size = handle_size_aligned;
             
-            VkStridedDeviceAddressRegionKHR rchit_shader_sbt_entry{};
-            rchit_shader_sbt_entry.deviceAddress = rchit_shader_binding_table->device_address();
-            rchit_shader_sbt_entry.stride = handle_size_aligned;
-            rchit_shader_sbt_entry.size = handle_size_aligned;
+            // VkStridedDeviceAddressRegionKHR rchit_shader_sbt_entry{};
+            // rchit_shader_sbt_entry.deviceAddress = rchit_shader_binding_table->device_address();
+            // rchit_shader_sbt_entry.stride = handle_size_aligned;
+            // rchit_shader_sbt_entry.size = handle_size_aligned;
 
-            VkStridedDeviceAddressRegionKHR callable_shader_sbt_entry{};
+            // VkStridedDeviceAddressRegionKHR callable_shader_sbt_entry{};
 
-            vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline);
-            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline_layout, 0, 1, &rt_descriptor_set->descriptor_set(), 0, 0);
+            // vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline);
+            // vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, rt_pipeline_layout, 0, 1, &rt_descriptor_set->descriptor_set(), 0, 0);
 
-            vkCmdTraceRaysKHR(command_buffer,
-                              &rgen_shader_sbt_entry,
-                              &rmiss_shader_sbt_entry,
-                              &rchit_shader_sbt_entry,
-                              &callable_shader_sbt_entry,
-                              width,
-                              height,
-                              1);
+            // vkCmdTraceRaysKHR(command_buffer,
+            //                   &rgen_shader_sbt_entry,
+            //                   &rmiss_shader_sbt_entry,
+            //                   &rchit_shader_sbt_entry,
+            //                   &callable_shader_sbt_entry,
+            //                   width,
+            //                   height,
+            //                   1);
             
             
             VkViewport viewport{};
@@ -557,7 +615,21 @@ int main(int argc, char **argv) {
             viewport.maxDepth = 1.0f;
             VkRect2D scissor{};
             scissor.offset = {0, 0};
-            scissor.extent = ctx->swapchain_extent();            
+            scissor.extent = ctx->swapchain_extent();   
+
+            temp_test_renderpass->begin(command_buffer, temp_test_framebuffer->framebuffer(), VkRect2D{
+                .offset = {0, 0},
+                .extent = ctx->swapchain_extent(),
+            }, {
+                clear_color,
+            }); 
+            vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+    		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+            temp_test_pipeline->bind(command_buffer);
+            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, temp_test_pipeline->pipeline_layout(), 0, 1, &temp_test_descriptor_set->descriptor_set(), 0, nullptr);
+            vkCmdDraw(command_buffer, 6, 1, 0, 0);
+
+            temp_test_renderpass->end(command_buffer);
 
             ctx->begin_swapchain_renderpass(command_buffer, clear_color);
 
