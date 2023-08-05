@@ -21,19 +21,19 @@ std::optional<texture_info_t> process_texture(model_loading_info_t& model_loadin
     return std::nullopt;
 }
 
-material_t process_material(model_loading_info_t& model_loading_info, aiMaterial *material) {
-    material_t loaded_material;
+material_description_t process_material(model_loading_info_t& model_loading_info, aiMaterial *material) {
+    material_description_t loaded_material_description;
 
     if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_DIFFUSE, texture_type_t::e_diffuse_map)) {
-        loaded_material.texture_infos.push_back(*texture_info);        
+        loaded_material_description.texture_infos.push_back(*texture_info);        
     }
 
     if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_NORMALS, texture_type_t::e_normal_map)) {
-        loaded_material.texture_infos.push_back(*texture_info);        
+        loaded_material_description.texture_infos.push_back(*texture_info);        
     }
 
     if (auto texture_info = process_texture(model_loading_info, material, aiTextureType_SPECULAR, texture_type_t::e_specular_map)) {
-        loaded_material.texture_infos.push_back(*texture_info);        
+        loaded_material_description.texture_infos.push_back(*texture_info);        
     }  
 
     aiColor3D diffuse_color;
@@ -43,9 +43,9 @@ material_t process_material(model_loading_info_t& model_loading_info, aiMaterial
     diffuse_texture_info.texture_type = texture_type_t::e_diffuse_color;
     diffuse_texture_info.diffuse_color = glm::vec4(diffuse_color.r, diffuse_color.g, diffuse_color.b, 1);
 
-    loaded_material.texture_infos.push_back(diffuse_texture_info);
+    loaded_material_description.texture_infos.push_back(diffuse_texture_info);
 
-    return loaded_material;
+    return loaded_material_description;
 }
 
 mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, const aiScene *scene) {
@@ -54,7 +54,7 @@ mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, cons
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         vertex_t vertex{};
 
-        vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
+        vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1 };
         vertex.normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
 
         if (mesh->mTextureCoords[0]) {
@@ -80,7 +80,7 @@ mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, cons
         }
     }
 
-    loaded_mesh.material = process_material(model_loading_info, scene->mMaterials[mesh->mMaterialIndex]);
+    loaded_mesh.material_description = process_material(model_loading_info, scene->mMaterials[mesh->mMaterialIndex]);
     return loaded_mesh;
 }
 

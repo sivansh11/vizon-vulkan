@@ -19,7 +19,7 @@ static void ExtractAndConvertToRGBA(const SL::Screen_Capture::Image &img, uint8_
 	}
 }
 
-Window::Window(std::shared_ptr<gfx::vulkan::context_t> context, const std::string& name) 
+Windowing::Windowing(std::shared_ptr<gfx::vulkan::context_t> context, const std::string& name) 
   : m_context(context) {
 
 	auto windows = SL::Screen_Capture::GetWindows();
@@ -52,13 +52,13 @@ Window::Window(std::shared_ptr<gfx::vulkan::context_t> context, const std::strin
 	m_framegrabber->setFrameChangeInterval(std::chrono::nanoseconds(50));
 }
 
-Window::~Window() {
+Windowing::~Windowing() {
 	m_framegrabber->pause();
 	m_framegrabber.reset();
 	m_image->unmap();
 }
 
-void Window::update(VkCommandBuffer commandBuffer) {
+void Windowing::update(VkCommandBuffer commandBuffer) {
 	if (m_imgBufferChanged) {
 		m_imgBufferChanged = false;
 		m_image->flush();

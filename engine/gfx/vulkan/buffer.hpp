@@ -38,14 +38,7 @@ public:
 
     VkBuffer& buffer() { return _buffer; }
     VkDeviceMemory& device_memory() { return _device_memory; }
-    VkDeviceAddress& device_address() {
-        VkBufferDeviceAddressInfo buffer_device_address_info{};
-        buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-        buffer_device_address_info.pNext = NULL;
-        buffer_device_address_info.buffer = _buffer;
-        _device_address = vkGetBufferDeviceAddress(_context->device(), &buffer_device_address_info);
-        return _device_address;
-    }
+    VkDeviceAddress& device_address() { return _device_address; }
 
 private:
     void *_mapped{nullptr};

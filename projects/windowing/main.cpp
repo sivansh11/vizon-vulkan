@@ -22,13 +22,17 @@
 #include <entt/entt.hpp>
 #include <ScreenCapture.h>
 
+#include <X11/extensions/Xcomposite.h>
+#include <X11/cursorfont.h>
+#include <X11/Xmd.h>
+
 #include <memory>
 #include <iostream>
 #include <chrono>
 #include <atomic>
 
 int main(int argc, char **argv) {
-    auto window = core::make_ref<core::Window>("VIZON-vulkan", 800, 600);
+    auto window = core::make_ref<core::window_t>("VIZON-vulkan", 800, 600);
     auto context = core::make_ref<gfx::vulkan::context_t>(window, 2, true);
     auto dispatcher = core::make_ref<event::Dispatcher>();
     core::Material::init(context);
@@ -77,11 +81,11 @@ int main(int argc, char **argv) {
 		.add_vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32_SFLOAT,    offsetof(core::Vertex, uv))
 		.add_vertex_input_attribute_description(0, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, tangent))
 		.add_vertex_input_attribute_description(0, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(core::Vertex, biTangent))
-        .add_shader("../../projects/windowing/shaders/diffuse_only/base.vert.spv")
-        .add_shader("../../projects/windowing/shaders/diffuse_only/base.frag.spv")
+        .add_shader("../../projects/windowing/shaders/diffuse_only/base.vert")
+        .add_shader("../../projects/windowing/shaders/diffuse_only/base.frag")
         .build(context, renderpass->renderpass());
 
-    auto [width, height] = window->getSize();
+    auto [width, height] = window->get_dimensions();
     auto imageColor = gfx::vulkan::image_builder_t{} 
         .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -117,8 +121,8 @@ int main(int argc, char **argv) {
         .add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
         .add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
         .add_descriptor_set_layout(swapChain_descriptorSetLayout)
-        .add_shader("../../assets/shaders/swapchain/base.vert.spv")
-        .add_shader("../../assets/shaders/swapchain/base.frag.spv")
+        .add_shader("../../assets/shaders/swapchain/base.vert")
+        .add_shader("../../assets/shaders/swapchain/base.frag")
         .build(context, context->swapchain_renderpass());
 
     swapChain_descriptor->write()
@@ -146,7 +150,7 @@ int main(int argc, char **argv) {
             3, 4, 5
         };
         auto mesh = scene.emplace<std::shared_ptr<core::Mesh>>(ent) = core::make_ref<core::Mesh>(context, vertices, indices);
-        auto wind = scene.emplace<std::shared_ptr<Window>>(ent) = core::make_ref<Window>(context, "firefox");
+        auto wind = scene.emplace<std::shared_ptr<Windowing>>(ent) = core::make_ref<Windowing>(context, "firefox");
         auto mat = scene.emplace<std::shared_ptr<core::Material>>(ent) = core::make_ref<core::Material>();
         mat->diffuse = wind->image();
         mat->descriptor_set = gfx::vulkan::descriptor_set_builder_t{}
@@ -169,7 +173,7 @@ int main(int argc, char **argv) {
     }
 
     context->add_resize_callback([&]() {
-        auto [width, height] = window->getSize();
+        auto [width, height] = window->get_dimensions();
         imageColor = gfx::vulkan::image_builder_t{} 
             .build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -188,8 +192,8 @@ int main(int argc, char **argv) {
 
     float targetFPS = 60.f;
     auto lastTime = std::chrono::system_clock::now();
-    while (!window->shouldClose()) {
-        window->pollEvents();
+    while (!window->should_close()) {
+        window->poll_events();
 
         auto currentTime = std::chrono::system_clock::now();
         auto dt = currentTime - lastTime;
@@ -233,7 +237,7 @@ int main(int argc, char **argv) {
             globalUniformBuffer.invView = glm::inverse(globalUniformBuffer.view);
             std::memcpy(globalUniformBufferObject[currentIndex]->map(), &globalUniformBuffer, sizeof(GlobalUniformBufferStruct));        
 
-            for (auto [ent, window] : scene.view<std::shared_ptr<Window>>().each()) {
+            for (auto [ent, window] : scene.view<std::shared_ptr<Windowing>>().each()) {
                 window->update(commandBuffer);
             }
 

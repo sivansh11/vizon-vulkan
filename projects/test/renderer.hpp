@@ -21,14 +21,14 @@
 
 class Renderer {
 public:
-    Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vulkan::context_t> context, std::shared_ptr<event::Dispatcher> dispatcher);
+    Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::vulkan::context_t> context, std::shared_ptr<event::Dispatcher> dispatcher);
     ~Renderer();
 
     void recreateDimentionDependentResources();
     void render(std::shared_ptr<entt::registry> scene, core::CameraComponent& camera);  
     
 private:
-    std::shared_ptr<core::Window> window;
+    std::shared_ptr<core::window_t> window;
     std::shared_ptr<event::Dispatcher> dispatcher;
     std::shared_ptr<gfx::vulkan::context_t> context;
 

@@ -4,8 +4,8 @@
 
 namespace core {
 
-Window::Window(const std::string& title, uint32_t width, uint32_t height)
-  : m_title(title) {
+window_t::window_t(const std::string& title, uint32_t width, uint32_t height)
+  : _title(title) {
     if (!glfwInit()) {
         ERROR("Failed to initialize GLFW");
         std::terminate();
@@ -13,19 +13,19 @@ Window::Window(const std::string& title, uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    m_windowPtr = glfwCreateWindow(width, height, m_title.c_str(), NULL, NULL);
+    _window_p = glfwCreateWindow(width, height, _title.c_str(), NULL, NULL);
 
-    TRACE("Window {} created", m_title);
+    TRACE("Window {} created", _title);
 }    
 
-Window::~Window() {
+window_t::~window_t() {
     glfwTerminate();
-    TRACE("Window {} destroyed", m_title);
+    TRACE("Window {} destroyed", _title);
 }
 
-std::pair<int, int> Window::getSize() {
+std::pair<int, int> window_t::get_dimensions() {
     int width, height;
-    glfwGetWindowSize(m_windowPtr, &width, &height);
+    glfwGetWindowSize(_window_p, &width, &height);
     return { width, height };
 }
 

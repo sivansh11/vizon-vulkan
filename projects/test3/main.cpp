@@ -38,12 +38,12 @@ struct acceleration_structure_t {
 };
 
 int main(int argc, char **argv) {
-    auto window = core::make_ref<core::Window>("test3", 600, 400);
+    auto window = core::make_ref<core::window_t>("test3", 600, 400);
     auto ctx = core::make_ref<gfx::vulkan::context_t>(window, 1, true, true);
 
     core::ImGui_init(window, ctx);
 
-    auto [width, height] = window->getSize();
+    auto [width, height] = window->get_dimensions();
 
     auto image = image_builder_t{}
         .build2D(ctx,
@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
     blas_geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     blas_geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     blas_geometry.geometry.triangles.vertexData.deviceAddress = vertex_buffer->device_address();
+    blas_geometry.geometry.triangles.vertexStride = sizeof(glm::vec3);
     blas_geometry.geometry.triangles.maxVertex = vertices.size();
     blas_geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
     blas_geometry.geometry.triangles.indexData.deviceAddress = index_buffer->device_address();
@@ -539,8 +540,8 @@ int main(int argc, char **argv) {
 
     float target_FPS = 60.f;
     auto last_time = std::chrono::system_clock::now();
-    while (!window->shouldClose()) {
-        window->pollEvents();
+    while (!window->should_close()) {
+        window->poll_events();
         
         auto current_time = std::chrono::system_clock::now();
         auto time_difference = current_time - last_time;

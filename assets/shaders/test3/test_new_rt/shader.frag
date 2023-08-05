@@ -28,7 +28,7 @@ void main() {
 			outColor = vec4(1, 1, 1, 1);
 			break;
 		case gl_RayQueryCommittedIntersectionNoneEXT:
-			outColor = vec4(1, 1, 0, 1);
+			outColor = vec4(0, 0, 0, 1);
 			break;
 	}
 

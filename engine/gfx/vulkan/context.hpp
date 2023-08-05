@@ -46,18 +46,18 @@ struct swapchain_support_details_t {
 class context_t {
 public:
     
-    context_t(core::ref<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation, bool enable_raytracing = false);
+    context_t(core::ref<core::window_t> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation, bool enable_raytracing = false);
     ~context_t();
 
     std::optional<std::pair<VkCommandBuffer, uint32_t>> start_frame();
-    bool end_frame(VkCommandBuffer command_buffer);
+    bool end_frame(VkCommandBuffer commandbuffer);
 
-    void begin_swapchain_renderpass(VkCommandBuffer command_buffer, const VkClearValue& clearValue);
-    void end_swapchain_renderpass(VkCommandBuffer command_buffer);
+    void begin_swapchain_renderpass(VkCommandBuffer commandbuffer, const VkClearValue& clearValue);
+    void end_swapchain_renderpass(VkCommandBuffer commandbuffer);
 
-    VkCommandBuffer start_single_use_command_buffer();
-    void end_single_use_command_buffer(VkCommandBuffer command_buffer);
-    void single_use_command_buffer(std::function<void(VkCommandBuffer)> fn);
+    VkCommandBuffer start_single_use_commandbuffer();
+    void end_single_use_commandbuffer(VkCommandBuffer commandbuffer);
+    void single_use_commandbuffer(std::function<void(VkCommandBuffer)> fn);
 
     uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties);
 
@@ -129,7 +129,7 @@ private:
 
     void create_command_pool();
 
-    void allocate_command_buffers();
+    void allocate_commandbuffers();
 
     void create_sync_objects();
 
@@ -138,7 +138,7 @@ private:
     void recreate_swapchain_and_its_resources();
 
 private:
-    core::ref<core::Window> _window;
+    core::ref<core::window_t> _window;
 
     friend class buffer_builder_t;
     friend class pipeline_builder_t;
@@ -175,7 +175,7 @@ private:
 
     // command buffers, can stay
     VkCommandPool _command_pool{};
-    std::vector<VkCommandBuffer> _command_buffers{};
+    std::vector<VkCommandBuffer> _commandbuffers{};
 
     // renderer part ?
     uint32_t _current_frame{};

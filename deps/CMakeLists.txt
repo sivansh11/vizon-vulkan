@@ -17,3 +17,11 @@ set(BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
 set(BUILD_CSHARP OFF CACHE BOOL "" FORCE)
 add_subdirectory(screen_capture_lite)
 add_subdirectory(imgui)
+
+add_subdirectory(glslang)
+add_subdirectory(SPIRV-Headers)
+add_subdirectory(SPIRV-Tools)
+
+set(SHADERC_SKIP_TESTS ON)
+set(SHADERC_ENABLE_TESTS OFF)
+add_subdirectory(shaderc)

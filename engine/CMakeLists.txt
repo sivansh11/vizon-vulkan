@@ -15,6 +15,9 @@ endif()
 if(!X11_Xfixes_LIB)
     message(FATAL_ERROR "X11 fixes extension is required, but not found!")
 endif()
+if (!X11_Xext_LIB)
+    message(FATAL_ERROR "X11 Xext extension required but not found!")
+endif()
 
 target_compile_definitions(engine PUBLIC
     VIZON_PROFILE_ENABLE
@@ -27,6 +30,15 @@ include_directories(engine
     .
 )
 
+target_include_directories(engine
+    PUBLIC glslang
+    PUBLIC SPIRV-Headers
+    PUBLIC SPIRV-Tools
+    PUBLIC shaderc
+    PUBLIC glslc
+    PUBLIC shaderc_util
+)
+
 target_link_libraries(engine
     glfw
     glm
@@ -37,8 +49,22 @@ target_link_libraries(engine
     assimp
     screen_capture_lite_static
     imgui
+    glslang
+    SPIRV-Headers
+    SPIRV-Tools
+    shaderc
+    glslc
+    shaderc_util
+    # X11
+    # Xext
+    # Xdamage
+    # Xfixes
+    # Xtst
+    ${X11_Xext_LIB}
+    ${X11_Xcomposite_LIB}
+    ${X11_Xrender_LIB}
     ${X11_LIBRARIES}
     ${X11_Xfixes_LIB}
-    # ${X11_XTest_LIB}
+    ${X11_XTest_LIB}
     ${X11_Xinerama_LIB}
 )

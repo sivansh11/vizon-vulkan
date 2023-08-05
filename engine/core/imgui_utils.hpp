@@ -9,7 +9,7 @@
 
 namespace core {
 
-void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::context_t> context);
+void ImGui_init(core::ref<core::window_t> window, core::ref<gfx::vulkan::context_t> context);
 void ImGui_shutdown();
 void ImGui_newframe();
 void ImGui_endframe(VkCommandBuffer commandBuffer);

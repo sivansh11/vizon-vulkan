@@ -26,8 +26,8 @@ public:
     renderpass_t(core::ref<context_t> context, VkRenderPass renderpass);
     ~renderpass_t();
 
-    void begin(VkCommandBuffer command_buffer, VkFramebuffer framebuffer, const VkRect2D render_area, const std::vector<VkClearValue>& clear_values);
-    void end(VkCommandBuffer command_buffer);
+    void begin(VkCommandBuffer commandbuffer, VkFramebuffer framebuffer, const VkRect2D render_area, const std::vector<VkClearValue>& clear_values);
+    void end(VkCommandBuffer commandbuffer);
 
     VkRenderPass& renderpass() { return _renderpass; }
 

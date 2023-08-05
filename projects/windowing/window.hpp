@@ -10,10 +10,10 @@
 
 #include <string>
 
-class Window {
+class Windowing {
 public:
-    Window(std::shared_ptr<gfx::vulkan::context_t> context, const std::string& name);
-    ~Window();
+    Windowing(std::shared_ptr<gfx::vulkan::context_t> context, const std::string& name);
+    ~Windowing();
 
     void update(VkCommandBuffer commandBuffer);
 

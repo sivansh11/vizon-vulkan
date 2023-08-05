@@ -11,7 +11,7 @@
 
 class EditorCamera : public core::CameraComponent {
 public:
-    EditorCamera(std::shared_ptr<core::Window> window)
+    EditorCamera(std::shared_ptr<core::window_t> window)
       : m_window(window) {
 
     }
@@ -21,32 +21,32 @@ public:
 
     void onUpdate(float ts) {
         // ImVec2 ws = ImGui::GetWindowSize();
-        auto [width, height] = m_window->getSize();
+        auto [width, height] = m_window->get_dimensions();
         update(float(width) / float(height));
 
         double curX, curY;
-        glfwGetCursorPos(m_window->getWindow(), &curX, &curY);
+        glfwGetCursorPos(m_window->window(), &curX, &curY);
 
         float velocity = m_speed * ts;
 
-        if (glfwGetKey(m_window->getWindow(), GLFW_KEY_W)) 
+        if (glfwGetKey(m_window->window(), GLFW_KEY_W)) 
             m_pos += m_front * velocity;
-        if (glfwGetKey(m_window->getWindow(), GLFW_KEY_S)) 
+        if (glfwGetKey(m_window->window(), GLFW_KEY_S)) 
             m_pos -= m_front * velocity;
-        if (glfwGetKey(m_window->getWindow(), GLFW_KEY_D)) 
+        if (glfwGetKey(m_window->window(), GLFW_KEY_D)) 
             m_pos += m_right * velocity;
-        if (glfwGetKey(m_window->getWindow(), GLFW_KEY_A)) 
+        if (glfwGetKey(m_window->window(), GLFW_KEY_A)) 
             m_pos -= m_right * velocity;
-        if (glfwGetKey(m_window->getWindow(), GLFW_KEY_SPACE)) 
+        if (glfwGetKey(m_window->window(), GLFW_KEY_SPACE)) 
             m_pos += m_up * velocity;
-        if (glfwGetKey(m_window->getWindow(), GLFW_KEY_LEFT_SHIFT)) 
+        if (glfwGetKey(m_window->window(), GLFW_KEY_LEFT_SHIFT)) 
             m_pos -= m_up * velocity;
         
         glm::vec2 mouse{curX, curY};
         glm::vec2 difference = mouse - m_initialMouse;
         m_initialMouse = mouse;
 
-        if (glfwGetMouseButton(m_window->getWindow(), GLFW_MOUSE_BUTTON_1)) {
+        if (glfwGetMouseButton(m_window->window(), GLFW_MOUSE_BUTTON_1)) {
             
             difference.x = difference.x / float(width);
             difference.y = -(difference.y / float(height));
@@ -82,7 +82,7 @@ public:
     float speedMultiplyer = 1;
 
 private:
-    std::shared_ptr<core::Window> m_window;
+    std::shared_ptr<core::window_t> m_window;
     glm::vec3 m_front{0};
     glm::vec3 m_up{0, 1, 0};
     glm::vec3 m_right{0};

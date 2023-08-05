@@ -233,14 +233,14 @@ image_t::~image_t() {
 }
 
 void image_t::transition_layout(VkImageLayout old_layout, VkImageLayout new_layout) {
-    auto command_buffer = _context->start_single_use_command_buffer();
+    auto commandbuffer = _context->start_single_use_commandbuffer();
 
-    transition_layout(command_buffer, old_layout, new_layout);
+    transition_layout(commandbuffer, old_layout, new_layout);
     
-    _context->end_single_use_command_buffer(command_buffer);
+    _context->end_single_use_commandbuffer(commandbuffer);
 }
 
-void image_t::transition_layout(VkCommandBuffer command_buffer, VkImageLayout old_layout, VkImageLayout new_layout) {
+void image_t::transition_layout(VkCommandBuffer commandbuffer, VkImageLayout old_layout, VkImageLayout new_layout) {
     VkImageMemoryBarrier image_memory_barrier{};
     image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     image_memory_barrier.oldLayout = old_layout;
@@ -358,10 +358,10 @@ void image_t::transition_layout(VkCommandBuffer command_buffer, VkImageLayout ol
             break;
     };
 
-    vkCmdPipelineBarrier(command_buffer, source_stage, destination_stage, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+    vkCmdPipelineBarrier(commandbuffer, source_stage, destination_stage, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 }
 
-void image_t::genMipMaps(VkCommandBuffer command_buffer, VkImageLayout old_layout, VkImageLayout new_layout) {
+void image_t::genMipMaps(VkCommandBuffer commandbuffer, VkImageLayout old_layout, VkImageLayout new_layout) {
     VkImageMemoryBarrier image_memory_barrier{};
     image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     image_memory_barrier.srcAccessMask = 0;
@@ -387,7 +387,7 @@ void image_t::genMipMaps(VkCommandBuffer command_buffer, VkImageLayout old_layou
         image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+        vkCmdPipelineBarrier(commandbuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
         VkImageBlit imageBlit{};
         imageBlit.srcSubresource = {
@@ -407,14 +407,14 @@ void image_t::genMipMaps(VkCommandBuffer command_buffer, VkImageLayout old_layou
         imageBlit.dstOffsets[1] = {0, 0, 0};
         imageBlit.dstOffsets[1] = {mipWidth > 1 ? static_cast<int32_t>(mipWidth / 2) : 1, mipHeight > 1 ? static_cast<int32_t>(mipHeight / 2) : 1, 1};
 
-        vkCmdBlitImage(command_buffer, _imageInfo.image, old_layout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, _imageInfo.image, new_layout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, 1, &imageBlit, VK_FILTER_LINEAR);
+        vkCmdBlitImage(commandbuffer, _imageInfo.image, old_layout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, _imageInfo.image, new_layout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, 1, &imageBlit, VK_FILTER_LINEAR);
         
         image_memory_barrier.oldLayout = new_layout != VK_IMAGE_LAYOUT_GENERAL ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
         image_memory_barrier.newLayout = new_layout;
         image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         image_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+        vkCmdPipelineBarrier(commandbuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 
         if (mipWidth > 1) mipWidth /= 2;
         if (mipHeight > 1) mipHeight /= 2;
@@ -426,25 +426,25 @@ void image_t::genMipMaps(VkCommandBuffer command_buffer, VkImageLayout old_layou
     image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     image_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+    vkCmdPipelineBarrier(commandbuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 }
 
 void image_t::genMipMaps(VkImageLayout old_layout, VkImageLayout new_layout) {
-    auto command_buffer = _context->start_single_use_command_buffer();
-    genMipMaps(command_buffer, old_layout, new_layout);
-    _context->end_single_use_command_buffer(command_buffer);
+    auto commandbuffer = _context->start_single_use_commandbuffer();
+    genMipMaps(commandbuffer, old_layout, new_layout);
+    _context->end_single_use_commandbuffer(commandbuffer);
 }
 
 void image_t::copy_buffer_to_image(core::ref<context_t> context, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy) {
-    auto command_buffer = context->start_single_use_command_buffer();
+    auto commandbuffer = context->start_single_use_commandbuffer();
 
-    copy_buffer_to_image(command_buffer, buffer, image, image_layout, buffer_image_copy);
+    copy_buffer_to_image(commandbuffer, buffer, image, image_layout, buffer_image_copy);
 
-    context->end_single_use_command_buffer(command_buffer);
+    context->end_single_use_commandbuffer(commandbuffer);
 }
 
-void image_t::copy_buffer_to_image(VkCommandBuffer command_buffer, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy) {
-    vkCmdCopyBufferToImage(command_buffer, buffer.buffer(), image.image(), image_layout, 1, &buffer_image_copy);
+void image_t::copy_buffer_to_image(VkCommandBuffer commandbuffer, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy) {
+    vkCmdCopyBufferToImage(commandbuffer, buffer.buffer(), image.image(), image_layout, 1, &buffer_image_copy);
 }
 
 void image_t::invalidate(VkDeviceSize offset, VkDeviceSize size) {

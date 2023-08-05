@@ -7,6 +7,8 @@ namespace gfx {
 namespace vulkan {
 
 core::ref<buffer_t> buffer_builder_t::build(core::ref<context_t> context, VkDeviceSize size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryTypeIndex) {
+    bufferUsageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
     VkBufferCreateInfo buffer_create_info{};
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_create_info.size = size;
@@ -33,8 +35,7 @@ core::ref<buffer_t> buffer_builder_t::build(core::ref<context_t> context, VkDevi
     memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_allocate_info.allocationSize = memory_requirements.size;
     memory_allocate_info.memoryTypeIndex = context->find_memory_type(memory_requirements.memoryTypeBits, memoryTypeIndex);
-    if (context->_raytracing)  // TODO: come back to this
-        memory_allocate_info.pNext = &memory_allocate_flags_info;
+    memory_allocate_info.pNext = &memory_allocate_flags_info;
 
     VkDeviceMemory device_memory;
     if (vkAllocateMemory(context->device(), &memory_allocate_info, nullptr, &device_memory) != VK_SUCCESS) {
@@ -51,6 +52,11 @@ buffer_t::buffer_t(core::ref<context_t> context, VkBuffer buffer, VkDeviceMemory
   : _context(context),
     _buffer(buffer),
     _device_memory(device_memory) {
+    VkBufferDeviceAddressInfo buffer_device_address_info{};
+    buffer_device_address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+    buffer_device_address_info.pNext = NULL;
+    buffer_device_address_info.buffer = _buffer;
+    _device_address = vkGetBufferDeviceAddress(_context->device(), &buffer_device_address_info);
     TRACE("Created buffer");
 }
 
@@ -90,11 +96,11 @@ void buffer_t::unmap() {
 }
 
 void buffer_t::copy(core::ref<context_t> context, buffer_t& src_buffer, buffer_t& dst_buffer, const VkBufferCopy& buffer_copy) {
-    VkCommandBuffer commandBuffer = context->start_single_use_command_buffer();
+    VkCommandBuffer commandBuffer = context->start_single_use_commandbuffer();
 
     vkCmdCopyBuffer(commandBuffer, src_buffer.buffer(), dst_buffer.buffer(), 1, &buffer_copy);
 
-    context->end_single_use_command_buffer(commandBuffer);
+    context->end_single_use_commandbuffer(commandBuffer);
 }
 
 } // namespace vulkan

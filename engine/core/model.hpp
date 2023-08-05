@@ -20,11 +20,11 @@
 namespace core {
 
 struct vertex_t {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 uv;
-    glm::vec3 tangent;
-    glm::vec3 bi_tangent;
+    alignas(16) glm::vec4 position;
+    alignas(16) glm::vec3 normal;
+    alignas(16) glm::vec2 uv;
+    alignas(16) glm::vec3 tangent;
+    alignas(16) glm::vec3 bi_tangent;
 };
 
 enum texture_type_t {
@@ -40,14 +40,14 @@ struct texture_info_t {
     glm::vec4 diffuse_color;
 };
 
-struct material_t {
+struct material_description_t {
     std::vector<texture_info_t> texture_infos;
 };
 
 struct mesh_t {
     std::vector<vertex_t> vertices;
     std::vector<uint32_t> indices; 
-    material_t material;
+    material_description_t material_description;
 };
 
 struct model_t {
@@ -61,7 +61,7 @@ struct model_loading_info_t {
 
 std::optional<texture_info_t> process_texture(model_loading_info_t& model_loading_info, aiMaterial *material, aiTextureType type, texture_type_t texture_type);
 
-material_t process_material(model_loading_info_t& model_loading_info, aiMaterial *material);
+material_description_t process_material(model_loading_info_t& model_loading_info, aiMaterial *material);
 
 mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, const aiScene *scene);
 

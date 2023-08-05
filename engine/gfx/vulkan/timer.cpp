@@ -23,16 +23,16 @@ gpu_timer_t::~gpu_timer_t() {
     vkDestroyQueryPool(_context->device(), _queryPool, nullptr);
 }
 
-void gpu_timer_t::begin(VkCommandBuffer command_buffer) {
-    vkCmdResetQueryPool(command_buffer, _queryPool, 0, 2);
-    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, _queryPool, 0);
+void gpu_timer_t::begin(VkCommandBuffer commandbuffer) {
+    vkCmdResetQueryPool(commandbuffer, _queryPool, 0, 2);
+    vkCmdWriteTimestamp(commandbuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, _queryPool, 0);
 }
 
-void gpu_timer_t::end(VkCommandBuffer command_buffer) {
-    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _queryPool, 1);
+void gpu_timer_t::end(VkCommandBuffer commandbuffer) {
+    vkCmdWriteTimestamp(commandbuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _queryPool, 1);
 }
 
-std::optional<float> gpu_timer_t::getTime() {
+std::optional<float> gpu_timer_t::get_time() {
     uint64_t time_stamps[2];
     auto result = vkGetQueryPoolResults(_context->device(), _queryPool, 0, 2, sizeof(uint64_t) * 2, time_stamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT);
     if (result == VK_NOT_READY) {

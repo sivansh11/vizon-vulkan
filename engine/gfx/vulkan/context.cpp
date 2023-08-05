@@ -43,7 +43,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     return VK_FALSE;
 }
 
-context_t::context_t(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation, bool enable_raytracing)
+context_t::context_t(std::shared_ptr<core::window_t> window, uint32_t MAX_FRAMES_IN_FLIGHT, bool validation, bool enable_raytracing)
   : MAX_FRAMES_IN_FLIGHT(MAX_FRAMES_IN_FLIGHT),
     _window(window),
     _validation(validation),
@@ -66,7 +66,7 @@ context_t::context_t(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_I
 
     VkApplicationInfo application_info{};
     application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    application_info.pApplicationName = window->getTitle().c_str();
+    application_info.pApplicationName = window->get_title().c_str();
     application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     application_info.pEngineName = "Horizon";
     application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -107,7 +107,7 @@ context_t::context_t(std::shared_ptr<core::Window> window, uint32_t MAX_FRAMES_I
     create_renderpass();
     create_framebuffers();
     create_command_pool();
-    allocate_command_buffers();
+    allocate_commandbuffers();
     create_sync_objects();
     create_descriptor_pool();
 
@@ -153,19 +153,19 @@ std::optional<std::pair<VkCommandBuffer, uint32_t>> context_t::start_frame() {
         std::terminate();
     }
     vkResetFences(_device, 1, &_in_flight_fences[_current_frame]);
-    vkResetCommandBuffer(_command_buffers[_current_frame], 0);
-    VkCommandBufferBeginInfo command_buffer_begin_info{};
-	command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    if (vkBeginCommandBuffer(_command_buffers[_current_frame], &command_buffer_begin_info) != VK_SUCCESS) {
+    vkResetCommandBuffer(_commandbuffers[_current_frame], 0);
+    VkCommandBufferBeginInfo commandbuffer_begin_info{};
+	commandbuffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    if (vkBeginCommandBuffer(_commandbuffers[_current_frame], &commandbuffer_begin_info) != VK_SUCCESS) {
         ERROR("Failed to being command buffer");
         std::terminate();
     }
-    return std::pair<VkCommandBuffer, uint32_t>{ _command_buffers[_current_frame], _current_frame };
+    return std::pair<VkCommandBuffer, uint32_t>{ _commandbuffers[_current_frame], _current_frame };
 }
 
-bool context_t::end_frame(VkCommandBuffer command_buffer) {
+bool context_t::end_frame(VkCommandBuffer commandbuffer) {
     VIZON_PROFILE_FUNCTION();
-    if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
+    if (vkEndCommandBuffer(commandbuffer) != VK_SUCCESS) {
         ERROR("Failed to record command buffer");
         std::terminate();
     }
@@ -178,7 +178,7 @@ bool context_t::end_frame(VkCommandBuffer command_buffer) {
 	submit_info.pWaitSemaphores = wait_semaphores;
 	submit_info.pWaitDstStageMask = waitStages;
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &command_buffer;
+	submit_info.pCommandBuffers = &commandbuffer;
 	VkSemaphore signal_semaphores[] = { _render_finished_semaphores[_current_frame] };
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = signal_semaphores;
@@ -213,7 +213,7 @@ bool context_t::end_frame(VkCommandBuffer command_buffer) {
     return recreated;
 }
 
-void context_t::begin_swapchain_renderpass(VkCommandBuffer command_buffer, const VkClearValue& clear_value) {
+void context_t::begin_swapchain_renderpass(VkCommandBuffer commandbuffer, const VkClearValue& clear_value) {
     VIZON_PROFILE_FUNCTION();
     VkRenderPassBeginInfo render_pass_begin_info{};
     render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -223,43 +223,43 @@ void context_t::begin_swapchain_renderpass(VkCommandBuffer command_buffer, const
     render_pass_begin_info.renderArea.extent = _swapchain_extent;
     render_pass_begin_info.clearValueCount = 1;
     render_pass_begin_info.pClearValues = &clear_value;
-    vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);  // hardcoded subpass contents inline
+    vkCmdBeginRenderPass(commandbuffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);  // hardcoded subpass contents inline
 }
 
-void context_t::end_swapchain_renderpass(VkCommandBuffer command_buffer) {
+void context_t::end_swapchain_renderpass(VkCommandBuffer commandbuffer) {
     VIZON_PROFILE_FUNCTION();
-    vkCmdEndRenderPass(command_buffer);
+    vkCmdEndRenderPass(commandbuffer);
 }
 
-VkCommandBuffer context_t::start_single_use_command_buffer() {
+VkCommandBuffer context_t::start_single_use_commandbuffer() {
     VIZON_PROFILE_FUNCTION();
-    VkCommandBufferAllocateInfo command_buffer_allocate_info{};
-    command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    command_buffer_allocate_info.commandPool = _command_pool;
-    command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    command_buffer_allocate_info.commandBufferCount = 1;
+    VkCommandBufferAllocateInfo commandbuffer_allocate_info{};
+    commandbuffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandbuffer_allocate_info.commandPool = _command_pool;
+    commandbuffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandbuffer_allocate_info.commandBufferCount = 1;
 
-    VkCommandBuffer command_buffer;
+    VkCommandBuffer commandbuffer;
 
-    vkAllocateCommandBuffers(_device, &command_buffer_allocate_info, &command_buffer);
+    vkAllocateCommandBuffers(_device, &commandbuffer_allocate_info, &commandbuffer);
 
-    VkCommandBufferBeginInfo command_buffer_begin_info{};
-    command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    VkCommandBufferBeginInfo commandbuffer_begin_info{};
+    commandbuffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandbuffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
+    vkBeginCommandBuffer(commandbuffer, &commandbuffer_begin_info);
 
-    return command_buffer;
+    return commandbuffer;
 }
 
-void context_t::end_single_use_command_buffer(VkCommandBuffer command_buffer) {
+void context_t::end_single_use_commandbuffer(VkCommandBuffer commandbuffer) {
     VIZON_PROFILE_FUNCTION();
-    vkEndCommandBuffer(command_buffer);
+    vkEndCommandBuffer(commandbuffer);
 
     VkSubmitInfo submit_info{};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &command_buffer;
+    submit_info.pCommandBuffers = &commandbuffer;
 
     VkFenceCreateInfo fence_create_info{};
     fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -283,14 +283,14 @@ void context_t::end_single_use_command_buffer(VkCommandBuffer command_buffer) {
 
     vkDestroyFence(_device, single_use_command_complete_fence, nullptr);
 
-    vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
+    vkFreeCommandBuffers(_device, _command_pool, 1, &commandbuffer);
 }
 
-void context_t::single_use_command_buffer(std::function<void(VkCommandBuffer)> fn) {
+void context_t::single_use_commandbuffer(std::function<void(VkCommandBuffer)> fn) {
     VIZON_PROFILE_FUNCTION();
-    auto command_buffer = start_single_use_command_buffer();
-    fn(command_buffer);
-    end_single_use_command_buffer(command_buffer);
+    auto commandbuffer = start_single_use_commandbuffer();
+    fn(commandbuffer);
+    end_single_use_commandbuffer(commandbuffer);
 }
 
 uint32_t context_t::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties) {
@@ -373,7 +373,7 @@ void context_t::setup_debug_messenger() {
 
 void context_t::create_surface() {
     VIZON_PROFILE_FUNCTION();
-    auto result = glfwCreateWindowSurface(_instance, _window->getWindow(), nullptr, &_surface);
+    auto result = glfwCreateWindowSurface(_instance, _window->window(), nullptr, &_surface);
     if (result != VK_SUCCESS) {
         ERROR("Failed to create surface");
         std::terminate();
@@ -384,12 +384,12 @@ void context_t::create_surface() {
 void context_t::push_required_device_extensions() {
     VIZON_PROFILE_FUNCTION();
     _device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    _device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
     if (_raytracing) {
         _device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
         _device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
         _device_extensions.push_back("VK_EXT_descriptor_indexing");
         _device_extensions.push_back(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
-        _device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
         _device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
         _device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
     }
@@ -599,6 +599,8 @@ void context_t::create_logical_device() {
     device_create_info.enabledExtensionCount = 0;
     if (_raytracing)
         device_create_info.pNext = &physical_device_ray_query_features;
+    else  // always enable bda 
+        device_create_info.pNext = &physical_device_buffer_device_address_features;
 
     if (_validation) 
         push_device_validation_layers();
@@ -647,7 +649,7 @@ VkExtent2D context_t::choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabil
         return capabilities.currentExtent;
     } else {
         int width, height;
-        glfwGetFramebufferSize(_window->getWindow(), &width, &height);
+        glfwGetFramebufferSize(_window->window(), &width, &height);
 
         VkExtent2D actual_extent = {
             static_cast<uint32_t>(width),
@@ -817,17 +819,17 @@ void context_t::create_command_pool() {
     }
 }
 
-void context_t::allocate_command_buffers() {
+void context_t::allocate_commandbuffers() {
     VIZON_PROFILE_FUNCTION();
-    VkCommandBufferAllocateInfo command_buffer_allocate_info{};
-    command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    command_buffer_allocate_info.commandPool = _command_pool;
-    command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    command_buffer_allocate_info.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
+    VkCommandBufferAllocateInfo commandbuffer_allocate_info{};
+    commandbuffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandbuffer_allocate_info.commandPool = _command_pool;
+    commandbuffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandbuffer_allocate_info.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
     
-    _command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
+    _commandbuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
-    if (vkAllocateCommandBuffers(_device, &command_buffer_allocate_info, _command_buffers.data()) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(_device, &commandbuffer_allocate_info, _commandbuffers.data()) != VK_SUCCESS) {
         ERROR("Failed to allocate commandbuffer");
         std::terminate();
     }
@@ -933,9 +935,9 @@ void context_t::create_descriptor_pool() {
 void context_t::recreate_swapchain_and_its_resources() {
     VIZON_PROFILE_FUNCTION();
     int width, height;
-    glfwGetFramebufferSize(_window->getWindow(), &width, &height);
+    glfwGetFramebufferSize(_window->window(), &width, &height);
     if (width == 0 || height == 0) {
-        glfwGetFramebufferSize(_window->getWindow(), &width, &height);
+        glfwGetFramebufferSize(_window->window(), &width, &height);
         glfwWaitEvents();
     }
     vkDeviceWaitIdle(_device);

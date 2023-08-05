@@ -57,12 +57,12 @@ public:
     }
 
     void transition_layout(VkImageLayout old_layout, VkImageLayout new_layout);
-    void transition_layout(VkCommandBuffer command_buffer, VkImageLayout old_layout, VkImageLayout new_layout);
-    void genMipMaps(VkCommandBuffer command_buffer, VkImageLayout old_layout, VkImageLayout new_layout);
+    void transition_layout(VkCommandBuffer commandbuffer, VkImageLayout old_layout, VkImageLayout new_layout);
+    void genMipMaps(VkCommandBuffer commandbuffer, VkImageLayout old_layout, VkImageLayout new_layout);
     void genMipMaps(VkImageLayout old_layout, VkImageLayout new_layout);
 
     static void copy_buffer_to_image(core::ref<context_t> context, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy);
-    static void copy_buffer_to_image(VkCommandBuffer command_buffer, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy);
+    static void copy_buffer_to_image(VkCommandBuffer commandbuffer, buffer_t& buffer, image_t& image, VkImageLayout image_layout, VkBufferImageCopy buffer_image_copy);
 
     void *map(VkDeviceSize poffset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     void unmap();

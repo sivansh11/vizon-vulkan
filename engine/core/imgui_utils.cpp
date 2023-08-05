@@ -18,7 +18,7 @@ struct ImGuiBackendRendererData {
 
 };
 
-void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::context_t> context) {
+void ImGui_init(core::ref<core::window_t> window, core::ref<gfx::vulkan::context_t> context) {
     VIZON_PROFILE_FUNCTION();
     IMGUI_CHECKVERSION();
     
@@ -40,7 +40,7 @@ void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::context_t
 
     ImGui::StyleColorsDark();
 
-    ImGui_ImplGlfw_InitForVulkan(window->getWindow(), true);
+    ImGui_ImplGlfw_InitForVulkan(window->window(), true);
 
     ImGui_ImplVulkan_InitInfo initInfo{};
     initInfo.Instance = context->instance();
@@ -64,7 +64,7 @@ void ImGui_init(core::ref<core::Window> window, core::ref<gfx::vulkan::context_t
 
     ImGui_ImplVulkan_Init(&initInfo, context->swapchain_renderpass());
     
-    context->single_use_command_buffer([](VkCommandBuffer commandBuffer) {
+    context->single_use_commandbuffer([](VkCommandBuffer commandBuffer) {
         ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
     });
     ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -83,10 +83,8 @@ void ImGui_newframe() {
 }
 
 void ImGui_endframe(VkCommandBuffer commandBuffer) {
-    ImGui::EndFrame();
     ImGui::Render();
-    ImDrawData *drawData = ImGui::GetDrawData();
-    ImGui_ImplVulkan_RenderDrawData(drawData, commandBuffer);
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
 } // namespace core

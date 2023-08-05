@@ -1,6 +1,11 @@
 #include "pipeline.hpp"
 
+#include "core/core.hpp"
 #include "core/log.hpp"
+
+#include <shaderc/shaderc.hpp>
+#include <shaderc/glslc/src/file_includer.h>
+#include <shaderc/libshaderc_util/include/libshaderc_util/file_finder.h>
 
 #include <fstream>
 
@@ -44,6 +49,56 @@ VkShaderModule load_shader_module(core::ref<gfx::vulkan::context_t> context, con
         std::terminate();
     }
     return shader_module;
+}
+
+// in future return an optional
+core::ref<shader_t> shader_builder_t::build(core::ref<gfx::vulkan::context_t> context, shader_type_t shader_type, const std::string& name, const std::string& code) {
+    shaderc_shader_kind shaderc_kind{};
+    if (shader_type == shader_type_t::e_vertex) shaderc_kind = shaderc_vertex_shader;
+    if (shader_type == shader_type_t::e_fragment) shaderc_kind = shaderc_fragment_shader;
+    if (shader_type == shader_type_t::e_compute) shaderc_kind = shaderc_compute_shader;
+    if (shader_type == shader_type_t::e_geometry) shaderc_kind = shaderc_geometry_shader;
+
+    static shaderc::Compiler shaderc_compiler{};
+    static shaderc::CompileOptions shaderc_compile_options{};
+    static shaderc_util::FileFinder file_finder;
+    static bool once = []() {
+        shaderc_compile_options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        shaderc_compile_options.SetIncluder(std::make_unique<glslc::FileIncluder>(&file_finder));
+        return true;
+    }();
+
+    auto preprocess = shaderc_compiler.PreprocessGlsl(code, shaderc_kind, name.c_str(), shaderc_compile_options);
+    std::string preprocessed_code = { preprocess.begin(), preprocess.end() };
+
+    auto shader_module = shaderc_compiler.CompileGlslToSpv(preprocessed_code, shaderc_kind, name.c_str(), shaderc_compile_options);
+    if (shader_module.GetCompilationStatus() != shaderc_compilation_status_success) {
+        ERROR("{}", shader_module.GetErrorMessage());
+        std::terminate();
+    }
+    return core::make_ref<shader_t>(context, std::vector<uint32_t>{shader_module.begin(), shader_module.end()}, name, shader_type);
+}   
+
+shader_t::shader_t(core::ref<context_t> context, const std::vector<uint32_t>& shader_module_code, const std::string& name, shader_type_t shader_type) 
+  : _context(context),
+    _shader_type(shader_type),
+    _name(name) {
+    VkShaderModuleCreateInfo shader_module_create_info{};
+    shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_module_create_info.codeSize = shader_module_code.size() * 4;
+    shader_module_create_info.pCode = shader_module_code.data();
+
+    auto result = vkCreateShaderModule(context->device(), &shader_module_create_info, nullptr, &_shader_module);
+    if (result != VK_SUCCESS) {
+        ERROR("Failed to create shader module");
+        std::terminate();
+    }
+    INFO("Created shader module {}", _name);
+}
+
+shader_t::~shader_t() {
+    vkDestroyShaderModule(_context->device(), _shader_module, nullptr);
+    INFO("Destroyed shader module {}", _name);
 }
 
 // pipeline_builder_t& pipeline_builder_t::
@@ -129,51 +184,61 @@ pipeline_builder_t& pipeline_builder_t::set_vertex_input_attribute_description_v
     return *this;
 }   
 
-
-
 core::ref<pipeline_t> pipeline_builder_t::build(core::ref<context_t> context, VkRenderPass renderpass) {
     std::vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos{};
+    std::vector<core::ref<shader_t>> shaders;
 
     VkPipelineBindPoint pipeline_bind_point;
 
     for (auto& shader_path : shader_paths) {
         auto code = utils::read_file(shader_path);
-        
-        VkShaderModuleCreateInfo shader_module_create_info{};
-        shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        shader_module_create_info.codeSize = code.size();
-        shader_module_create_info.pCode = reinterpret_cast<const uint32_t *>(code.data());
-
-        VkShaderModule shader_module{};
-        if (vkCreateShaderModule(context->device(), &shader_module_create_info, nullptr, &shader_module) != VK_SUCCESS) {
-            ERROR("Failed to create shader module");
-            std::terminate();
-        }
 
         VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info{};
         pipeline_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        pipeline_shader_stage_create_info.module = shader_module;
         pipeline_shader_stage_create_info.pName = "main";
 
+        shader_type_t shader_type;
         if (shader_path.string().find("vert") != std::string::npos) {
             pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+            shader_type = shader_type_t::e_vertex;
             // TODO: make this more robust
             pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
         }
         if (shader_path.string().find("frag") != std::string::npos) {
             pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            shader_type = shader_type_t::e_fragment;
         }
-        if (shader_path.string().find("rchit") != std::string::npos) {
-            pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-            pipeline_bind_point = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
-        }
-        if (shader_path.string().find("rgen") != std::string::npos) {
-            pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
-        }
-        if (shader_path.string().find("rmiss") != std::string::npos) {
-            pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
-        }
+        // if (shader_path.string().find("rchit") != std::string::npos) {
+        //     pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+        //     pipeline_bind_point = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+        // }
+        // if (shader_path.string().find("rgen") != std::string::npos) {
+        //     pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+        // }
+        // if (shader_path.string().find("rmiss") != std::string::npos) {
+        //     pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+        // }
         
+        core::ref<shader_t> shader = shader_builder_t{}
+            .build(context, shader_type, shader_path.string(), {code.begin(), code.end()});
+
+        pipeline_shader_stage_create_info.module = shader->shader_module();        
+
+        // VkShaderModuleCreateInfo shader_module_create_info{};
+        // shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        // shader_module_create_info.codeSize = code.size();
+        // shader_module_create_info.pCode = reinterpret_cast<const uint32_t *>(code.data());
+
+        // VkShaderModule shader_module{};
+        // if (vkCreateShaderModule(context->device(), &shader_module_create_info, nullptr, &shader_module) != VK_SUCCESS) {
+        //     ERROR("Failed to create shader module");
+        //     std::terminate();
+        // }
+
+        
+
+        
+        shaders.push_back(shader);
         pipeline_shader_stage_create_infos.push_back(pipeline_shader_stage_create_info);
     }
 
@@ -348,9 +413,9 @@ core::ref<pipeline_t> pipeline_builder_t::build(core::ref<context_t> context, Vk
 
     }
 
-    for (auto pipeline_shader_stage_create_info : pipeline_shader_stage_create_infos) {
-        vkDestroyShaderModule(context->device(), pipeline_shader_stage_create_info.module, nullptr);
-    }
+    // for (auto pipeline_shader_stage_create_info : pipeline_shader_stage_create_infos) {
+    //     vkDestroyShaderModule(context->device(), pipeline_shader_stage_create_info.module, nullptr);
+    // }
 
     return core::make_ref<pipeline_t>(context, pipeline_layout, pipeline, pipeline_bind_point);
 }
@@ -368,8 +433,8 @@ pipeline_t::~pipeline_t() {
     vkDestroyPipeline(_context->device(), _pipeline, nullptr);
 }
 
-void pipeline_t::bind(VkCommandBuffer command_buffer) {
-    vkCmdBindPipeline(command_buffer, _pipeline_bind_point, _pipeline);
+void pipeline_t::bind(VkCommandBuffer commandbuffer) {
+    vkCmdBindPipeline(commandbuffer, _pipeline_bind_point, _pipeline);
 }
 
 } // namespace gfx::vulkan

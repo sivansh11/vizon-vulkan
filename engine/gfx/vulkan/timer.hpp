@@ -15,10 +15,10 @@ public:
     gpu_timer_t(core::ref<context_t> context);
     ~gpu_timer_t();
 
-    void begin(VkCommandBuffer command_buffer);
-    void end(VkCommandBuffer command_buffer);
+    void begin(VkCommandBuffer commandbuffer);
+    void end(VkCommandBuffer commandbuffer);
 
-    std::optional<float> getTime();
+    std::optional<float> get_time();
 
 private:
     core::ref<context_t> _context{};

@@ -25,7 +25,7 @@
 #include <chrono>
 
 int main(int argc, char **argv) {
-    auto window = std::make_shared<core::Window>("VIZON-vulkan", 800, 600);
+    auto window = std::make_shared<core::window_t>("VIZON-vulkan", 800, 600);
     auto context = std::make_shared<gfx::vulkan::context_t>(window, 2, true);
     auto dispatcher = std::make_shared<event::Dispatcher>();
 
@@ -51,8 +51,8 @@ int main(int argc, char **argv) {
 
     auto lastTime = std::chrono::system_clock::now();
 
-    while (!window->shouldClose()) {
-        window->pollEvents();
+    while (!window->should_close()) {
+        window->poll_events();
 
         auto currentTime = std::chrono::system_clock::now();
         auto dt = currentTime - lastTime;

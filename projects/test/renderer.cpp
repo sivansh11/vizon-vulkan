@@ -10,11 +10,11 @@
 
 #include <entt/entt.hpp>
 
-Renderer::Renderer(std::shared_ptr<core::Window> window, std::shared_ptr<gfx::vulkan::context_t> context, std::shared_ptr<event::Dispatcher> dispatcher)
+Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::vulkan::context_t> context, std::shared_ptr<event::Dispatcher> dispatcher)
   : window(window), dispatcher(dispatcher) {
     Renderer::context = context;
 
-	auto [width, height] = window->getSize();
+	auto [width, height] = window->get_dimensions();
 
 	depthDescriptorSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
 		.addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
@@ -445,7 +445,7 @@ Renderer::~Renderer() {
 void Renderer::recreateDimentionDependentResources() {
 	vkDeviceWaitIdle(context->device());
 
-	auto [width, height] = window->getSize();
+	auto [width, height] = window->get_dimensions();
 
 	depthImage = gfx::vulkan::image_builder_t{}
 		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -596,7 +596,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 			model.draw(commandBuffer, depthPipeline->pipeline_layout(), false);
 		}
 		depthTimer->end(commandBuffer);
-		if (auto t = depthTimer->getTime()) {
+		if (auto t = depthTimer->get_time()) {
 			INFO("Depth Timer: {}", *t);
 		}
 		depthRenderPass->end(commandBuffer);
@@ -632,7 +632,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 			model.draw(commandBuffer, deferredPipeline->pipeline_layout());
 		}
 		deferredTimer->end(commandBuffer);
-		if (auto t = deferredTimer->getTime()) {
+		if (auto t = deferredTimer->get_time()) {
 			INFO("Deferred Timer: {}", *t);
 		}
 		deferredRenderPass->end(commandBuffer);
@@ -686,7 +686,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 			model.draw(commandBuffer, shadowPipeline->pipeline_layout(), false);
 		}
 		shadowTimer->end(commandBuffer);
-		if (auto t = shadowTimer->getTime()) {
+		if (auto t = shadowTimer->get_time()) {
 			INFO("Shadow Timer: {}", *t);
 		}
 		shadowRenderPass->end(commandBuffer);
@@ -715,7 +715,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ssaoPipeline->pipeline_layout(), 0, 1, &ssaoSet0[context->current_frame()]->descriptor_set(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 		ssaoTimer->end(commandBuffer);
-		if (auto t = ssaoTimer->getTime()) {
+		if (auto t = ssaoTimer->get_time()) {
 			INFO("SSAO Timer: {}", *t);
 		}
 		ssaoRenderPass->end(commandBuffer);
@@ -746,7 +746,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, compositePipeline->pipeline_layout(), 0, 1, &compositeSet0[context->current_frame()]->descriptor_set(), 0, nullptr);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 		compositeTimer->end(commandBuffer);
-		if (auto t = compositeTimer->getTime()) {
+		if (auto t = compositeTimer->get_time()) {
 			INFO("Composite Timer: {}", *t);
 		}
 		compositeRenderPass->end(commandBuffer);
@@ -759,7 +759,7 @@ void Renderer::render(std::shared_ptr<entt::registry> scene, core::CameraCompone
 		swapChainPipeline->bind(commandBuffer);
 		vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 		swapChainTimer->end(commandBuffer);
-		if (auto t = swapChainTimer->getTime()) {
+		if (auto t = swapChainTimer->get_time()) {
 			INFO("SwapChain Timer: {}", *t);
 		}
 		context->end_swapchain_renderpass(commandBuffer);

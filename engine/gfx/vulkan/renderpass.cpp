@@ -85,7 +85,7 @@ renderpass_t::~renderpass_t() {
     TRACE("Destroyed renderpass");
 }
 
-void renderpass_t::begin(VkCommandBuffer command_buffer, VkFramebuffer framebuffer, const VkRect2D render_area, const std::vector<VkClearValue>& clear_values) {
+void renderpass_t::begin(VkCommandBuffer commandbuffer, VkFramebuffer framebuffer, const VkRect2D render_area, const std::vector<VkClearValue>& clear_values) {
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.framebuffer = framebuffer;
@@ -93,11 +93,11 @@ void renderpass_t::begin(VkCommandBuffer command_buffer, VkFramebuffer framebuff
     renderPassBeginInfo.renderArea = render_area;
     renderPassBeginInfo.clearValueCount = clear_values.size();
     renderPassBeginInfo.pClearValues = clear_values.data();
-    vkCmdBeginRenderPass(command_buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // hardcoded subpass contents inline
+    vkCmdBeginRenderPass(commandbuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // hardcoded subpass contents inline
 }
 
-void renderpass_t::end(VkCommandBuffer command_buffer) {
-    vkCmdEndRenderPass(command_buffer);
+void renderpass_t::end(VkCommandBuffer commandbuffer) {
+    vkCmdEndRenderPass(commandbuffer);
 }
 
 } // namespace vulkan

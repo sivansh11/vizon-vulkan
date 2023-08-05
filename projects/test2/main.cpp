@@ -51,8 +51,8 @@ struct set_1_t {
 };
 
 int main(int argc, char **argv) {
-    auto window = core::make_ref<core::Window>("test2", 1200, 800);
-    auto ctx = core::make_ref<gfx::vulkan::context_t>(window, 2, true, true);
+    auto window = core::make_ref<core::window_t>("test2", 1200, 800);
+    auto ctx = core::make_ref<gfx::vulkan::context_t>(window, 2, true);
 
     core::ImGui_init(window, ctx);
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build(ctx);
 
-    auto [width, height] = window->getSize();
+    auto [width, height] = window->get_dimensions();
 
     auto renderpass = gfx::vulkan::renderpass_builder_t{}
         .add_color_attachment(VkAttachmentDescription{
@@ -208,10 +208,10 @@ int main(int argc, char **argv) {
 
             // material
             gpu_mesh.material_descriptor_set = material_descriptor_set_layout->new_descriptor_set();
-            auto it = std::find_if(mesh.material.texture_infos.begin(), mesh.material.texture_infos.end(), [](const core::texture_info_t& texture_info) {
+            auto it = std::find_if(mesh.material_description.texture_infos.begin(), mesh.material_description.texture_infos.end(), [](const core::texture_info_t& texture_info) {
                 return texture_info.texture_type == core::texture_type_t::e_diffuse_map;
             });
-            if (it != mesh.material.texture_infos.end()) {
+            if (it != mesh.material_description.texture_infos.end()) {
                 auto image = gfx::vulkan::image_builder_t{}
                     .loadFromPath(ctx, it->file_path);
                 loaded_images.push_back(image);
@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
                 gpu_mesh.material_descriptor_set->write()
                     .pushImageInfo(0, 1, image->descriptor_info(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
                     .update();
-                // assert(false);
+                assert(false);
             }
             gpu_meshes.push_back(gpu_mesh);
         }
@@ -236,8 +236,8 @@ int main(int argc, char **argv) {
 
     float target_FPS = 60.f;
     auto last_time = std::chrono::system_clock::now();
-    while (!window->shouldClose()) {
-        window->pollEvents();
+    while (!window->should_close()) {
+        window->poll_events();
         
         auto current_time = std::chrono::system_clock::now();
         auto time_difference = current_time - last_time;
@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
             core::ImGui_newframe();
 
             ImGui::Begin("debug");
-            if (auto t = gpu_timer->getTime()) {
+            if (auto t = gpu_timer->get_time()) {
                 ImGui::Text("Diffuse only pass took: %f", *t);
             } else {
                 ImGui::Text("Diffuse only pass took: undefined");
