@@ -47,7 +47,7 @@ target_link_libraries(engine
     volk
     EnTT
     assimp
-    screen_capture_lite_static
+    # screen_capture_lite_static
     imgui
     glslang
     SPIRV-Headers

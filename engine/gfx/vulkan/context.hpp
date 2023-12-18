@@ -43,6 +43,90 @@ struct swapchain_support_details_t {
     std::vector<VkPresentModeKHR> present_modes;
 };
 
+struct sampler_create_info_t {
+    VkFilter                mag_filter = /*VK_FILTER_LINEAR*/ VK_FILTER_NEAREST;
+    VkFilter                min_filter = /*VK_FILTER_LINEAR*/ VK_FILTER_NEAREST;
+    VkSamplerMipmapMode     mipmap_mode = /*VK_SAMPLER_MIPMAP_MODE_LINEAR*/ VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    VkSamplerAddressMode    address_mode_u = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    VkSamplerAddressMode    address_mode_v = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    VkSamplerAddressMode    address_mode_w = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    float                   mip_lod_bias = 0;
+    VkBool32                anisotropy_enable = VK_FALSE;
+    float                   max_anisotropy = 0;  // maybe shouldnt be 0 ?
+    VkBool32                compare_enable = VK_FALSE;
+    VkCompareOp             compare_op = VK_COMPARE_OP_LESS;  // maybe should choose a different default
+    float                   min_lod = 0;
+    float                   max_lod = VK_LOD_CLAMP_NONE;
+    VkBorderColor           border_color = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    VkBool32                unnormalized_coordinates = VK_FALSE;
+
+    bool operator==(const sampler_create_info_t& other) const {
+        return mag_filter == other.mag_filter &&
+               min_filter == other.min_filter &&
+               mipmap_mode == other.mipmap_mode &&
+               address_mode_u == other.address_mode_u &&
+               address_mode_v == other.address_mode_v &&
+               address_mode_w == other.address_mode_w &&
+               mip_lod_bias == other.mip_lod_bias &&
+               anisotropy_enable == other.anisotropy_enable &&
+               max_anisotropy == other.max_anisotropy &&
+               compare_enable == other.compare_enable &&
+               compare_op == other.compare_op &&
+               min_lod == other.min_lod &&
+               max_lod == other.max_lod &&
+               border_color == other.border_color &&
+               unnormalized_coordinates == other.unnormalized_coordinates;
+    }
+};
+
+namespace utils {
+
+// might be wrong ?
+template <typename T>
+inline uint32_t reinterpret_to_u32(const T& value) {
+    static_assert(sizeof(T) == sizeof(uint32_t));  
+    return reinterpret_cast<const uint32_t&>(value);  
+}    
+
+} // namespace utils
+
+} // namespace vulkan
+
+} // namespace gfx
+
+namespace std {
+
+template <>
+struct hash<gfx::vulkan::sampler_create_info_t> {
+    size_t operator()(gfx::vulkan::sampler_create_info_t const &sampler_create_info) const {
+        size_t seed = 0;  // seed is u64 while all my params are u32, might be an issue ??
+        core::hash_combine(seed, 
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.mag_filter), 
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.min_filter),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.mipmap_mode),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.address_mode_u),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.address_mode_v),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.address_mode_w),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.mip_lod_bias),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.anisotropy_enable),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.max_anisotropy),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.compare_enable),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.compare_op),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.min_lod),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.max_lod),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.border_color),
+                           gfx::vulkan::utils::reinterpret_to_u32(sampler_create_info.unnormalized_coordinates)
+        );
+        return seed;
+    }
+};
+
+}  // namespace std
+
+namespace gfx {
+
+namespace vulkan {
+
 class context_t {
 public:
     
@@ -60,6 +144,8 @@ public:
     void single_use_commandbuffer(std::function<void(VkCommandBuffer)> fn);
 
     uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties);
+
+    VkSampler sampler(const sampler_create_info_t& sampler_create_info);
 
     VkInstance& instance() { return _instance; }
     VkPhysicalDevice& physical_device() { return _physical_device; }
@@ -87,6 +173,7 @@ public:
     std::vector<VkFramebuffer>& swapchain_framebuffers() { return _swapchain_framebuffers; }
 
     VkDescriptorPool& descriptor_pool() { return _descriptor_pool; }
+
 
     void wait_idle() { 
         vkDeviceWaitIdle(_device);
@@ -188,6 +275,8 @@ private:
     VkDescriptorPool _descriptor_pool{}; // maybe create a seperate descriptor pool in the renderer ?
 
     std::vector<std::function<void()>> _resize_call_backs;
+
+    std::unordered_map<sampler_create_info_t, VkSampler> _sampler_table;
 };
 
 } // namespace vulkan

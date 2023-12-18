@@ -116,6 +116,9 @@ context_t::context_t(std::shared_ptr<core::window_t> window, uint32_t MAX_FRAMES
 
 context_t::~context_t() {
     vkDeviceWaitIdle(_device);
+    for (auto& [sampler_info, sampler] : _sampler_table) {
+        vkDestroySampler(_device, sampler, nullptr);
+    }
     vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(_device, _image_available_semaphores[i], nullptr);
@@ -307,6 +310,40 @@ uint32_t context_t::find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags
     std::terminate();
 }
 
+VkSampler context_t::sampler(const sampler_create_info_t& sampler_create_info) {
+    auto sampler_itr = _sampler_table.find(sampler_create_info);
+    if (sampler_itr != _sampler_table.end()) {
+        return sampler_itr->second;
+    }
+    VkSamplerCreateInfo vk_sampler_create_info{};
+    vk_sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    vk_sampler_create_info.flags;
+    vk_sampler_create_info.magFilter = sampler_create_info.mag_filter;
+    vk_sampler_create_info.minFilter = sampler_create_info.min_filter;
+    vk_sampler_create_info.mipmapMode = sampler_create_info.mipmap_mode;
+    vk_sampler_create_info.addressModeU = sampler_create_info.address_mode_u;
+    vk_sampler_create_info.addressModeV = sampler_create_info.address_mode_v;
+    vk_sampler_create_info.addressModeW = sampler_create_info.address_mode_w;
+    vk_sampler_create_info.mipLodBias = sampler_create_info.mip_lod_bias;
+    vk_sampler_create_info.anisotropyEnable = sampler_create_info.anisotropy_enable;
+    vk_sampler_create_info.maxAnisotropy = sampler_create_info.max_anisotropy;
+    vk_sampler_create_info.compareEnable = sampler_create_info.compare_enable;
+    vk_sampler_create_info.compareOp = sampler_create_info.compare_op;
+    vk_sampler_create_info.minLod = sampler_create_info.min_lod;
+    vk_sampler_create_info.maxLod = sampler_create_info.max_lod;
+    vk_sampler_create_info.borderColor = sampler_create_info.border_color;
+    vk_sampler_create_info.unnormalizedCoordinates = sampler_create_info.unnormalized_coordinates;
+
+    VkSampler sampler{};
+    if (vkCreateSampler(_device, &vk_sampler_create_info, nullptr, &sampler) != VK_SUCCESS) {
+        ERROR("Failed to create sampler");
+        std::terminate();
+    }
+
+    _sampler_table[sampler_create_info] = sampler;
+    return sampler;
+}
+
 bool context_t::check_instance_validation_layer_support() {
     VIZON_PROFILE_FUNCTION();
     uint32_t layer_count;
@@ -340,7 +377,7 @@ void context_t::push_required_instance_extensions() {
     for (uint32_t i = 0; i < glfw_extension_count; i++) {
         _instance_extensions.push_back(glfw_extensions[i]);
     }
-    // _instance_extensions.push_back("VK_KHR_get_physical_device_properties2");
+    _instance_extensions.push_back("VK_KHR_get_physical_device_properties2");
 }
 
 VkDebugUtilsMessengerCreateInfoEXT context_t::get_debug_utils_messenger_create_info() {
@@ -352,8 +389,8 @@ VkDebugUtilsMessengerCreateInfoEXT context_t::get_debug_utils_messenger_create_i
                                                     VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
                                                     VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     debug_utils_messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT    | 
-                                                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | 
-                                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+                                                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT; /*| 
+                                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT; */
     debug_utils_messenger_create_info.pfnUserCallback = debug_callback;
     debug_utils_messenger_create_info.pUserData = nullptr;
     return debug_utils_messenger_create_info;
@@ -406,7 +443,7 @@ queue_family_indices_t context_t::find_queue_families(VkPhysicalDevice physical_
 
     int i = 0;
     for (auto queue_family_properties : queue_families_properties) {
-        if (queue_family_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        if ((queue_family_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
             queue_family_indices.graphics_family = i;
         }
 
@@ -482,7 +519,7 @@ bool context_t::is_physical_device_suitable(VkPhysicalDevice physical_device) {
 
     INFO("timestampperiod {}", device_properties.limits.timestampPeriod);    
 
-    return queue_family_indices.is_complete() && swapchain_adequate && device_properties.limits.timestampComputeAndGraphics == VK_TRUE && device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    return queue_family_indices.is_complete() && swapchain_adequate && device_properties.limits.timestampComputeAndGraphics == VK_TRUE;
 }
 
 void context_t::pick_physical_device() {
@@ -554,11 +591,16 @@ void context_t::create_logical_device() {
         device_queue_create_infos.push_back(device_queue_create_info);
     }
 
+    VkPhysicalDeviceScalarBlockLayoutFeatures physical_device_scalar_block_layout_features{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES,
+        .scalarBlockLayout = VK_TRUE,
+    };
+
     VkPhysicalDeviceBufferDeviceAddressFeatures
         physical_device_buffer_device_address_features = {
             .sType =
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
-            .pNext = NULL,
+            .pNext = &physical_device_scalar_block_layout_features,
             .bufferDeviceAddress = VK_TRUE,
             .bufferDeviceAddressCaptureReplay = VK_FALSE,
             .bufferDeviceAddressMultiDevice = VK_FALSE};
@@ -589,7 +631,7 @@ void context_t::create_logical_device() {
         .pNext = &physical_device_raytracing_pipeline_features,
         .rayQuery = VK_TRUE};
 
-    VkPhysicalDeviceFeatures device_features = {.geometryShader = VK_TRUE};
+    VkPhysicalDeviceFeatures device_features = {.geometryShader = VK_TRUE, .fragmentStoresAndAtomics = VK_TRUE};
 
     VkDeviceCreateInfo device_create_info{};
     device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

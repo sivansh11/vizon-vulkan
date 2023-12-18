@@ -59,6 +59,7 @@ struct pipeline_builder_t {
     pipeline_builder_t& add_dynamic_state(VkDynamicState state);
 
     pipeline_builder_t& add_descriptor_set_layout(core::ref<descriptor_set_layout_t> descriptor_set_layout);
+    pipeline_builder_t& add_push_constant_range(uint64_t offset, uint64_t size, VkShaderStageFlags shader_stage_flag);
 
     pipeline_builder_t& add_default_color_blend_attachment_state();
     pipeline_builder_t& add_color_blend_attachment_state(const VkPipelineColorBlendAttachmentState& pipeline_color_blend_attachment_state);
@@ -70,7 +71,7 @@ struct pipeline_builder_t {
     pipeline_builder_t& set_vertex_input_binding_description_vector(const std::vector<VkVertexInputBindingDescription>& val);
     pipeline_builder_t& set_vertex_input_attribute_description_vector(const std::vector<VkVertexInputAttributeDescription>& val);        
 
-    core::ref<pipeline_t> build(core::ref<context_t> context, VkRenderPass renderpass);
+    core::ref<pipeline_t> build(core::ref<context_t> context, VkRenderPass renderpass = VK_NULL_HANDLE);
 
     std::vector<VkDynamicState> dynamic_states;
     std::vector<std::filesystem::path> shader_paths;
@@ -78,6 +79,7 @@ struct pipeline_builder_t {
     std::vector<VkVertexInputBindingDescription> vertex_input_binding_descriptions;
     std::vector<VkDescriptorSetLayout> descriptor_set_layouts; 
     std::vector<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
+    std::vector<VkPushConstantRange> push_constant_ranges;
     VkPipelineDepthStencilStateCreateInfo pipeline_depth_stencil_state_create_info{};
 };
 

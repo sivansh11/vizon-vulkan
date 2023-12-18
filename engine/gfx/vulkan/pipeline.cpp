@@ -63,7 +63,9 @@ core::ref<shader_t> shader_builder_t::build(core::ref<gfx::vulkan::context_t> co
     static shaderc::CompileOptions shaderc_compile_options{};
     static shaderc_util::FileFinder file_finder;
     static bool once = []() {
-        shaderc_compile_options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        // shaderc_compile_options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        shaderc_compile_options.SetOptimizationLevel(shaderc_optimization_level_zero);
+        shaderc_compile_options.SetGenerateDebugInfo();
         shaderc_compile_options.SetIncluder(std::make_unique<glslc::FileIncluder>(&file_finder));
         return true;
     }();
@@ -128,6 +130,15 @@ pipeline_builder_t& pipeline_builder_t::add_dynamic_state(VkDynamicState state) 
 pipeline_builder_t& pipeline_builder_t::add_descriptor_set_layout(core::ref<descriptor_set_layout_t> descriptor_set_layout) {
     assert(descriptor_set_layout);
     descriptor_set_layouts.push_back(descriptor_set_layout->descriptor_set_layout());
+    return *this;
+}
+
+pipeline_builder_t& pipeline_builder_t::add_push_constant_range(uint64_t offset, uint64_t size, VkShaderStageFlags shader_stage_flag) {
+    VkPushConstantRange push_constant_range{};
+    push_constant_range.offset = offset;
+    push_constant_range.size = size;
+    push_constant_range.stageFlags = shader_stage_flag;
+    push_constant_ranges.push_back(push_constant_range);
     return *this;
 }
 
@@ -198,15 +209,20 @@ core::ref<pipeline_t> pipeline_builder_t::build(core::ref<context_t> context, Vk
         pipeline_shader_stage_create_info.pName = "main";
 
         shader_type_t shader_type;
+        // todo: make the whole finding thing more robust (only look at the extension not the whole path)
         if (shader_path.string().find("vert") != std::string::npos) {
             pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
             shader_type = shader_type_t::e_vertex;
             // TODO: make this more robust
             pipeline_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        }
-        if (shader_path.string().find("frag") != std::string::npos) {
+        } else if (shader_path.string().find("frag") != std::string::npos) {
             pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
             shader_type = shader_type_t::e_fragment;
+        } else if (shader_path.string().find("comp") != std::string::npos) {
+            pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+            shader_type = shader_type_t::e_compute;
+            // TODO: make this more robust
+            pipeline_bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
         }
         // if (shader_path.string().find("rchit") != std::string::npos) {
         //     pipeline_shader_stage_create_info.stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
@@ -248,8 +264,8 @@ core::ref<pipeline_t> pipeline_builder_t::build(core::ref<context_t> context, Vk
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipeline_layout_info.setLayoutCount = descriptor_set_layouts.size();
     pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
-    pipeline_layout_info.pushConstantRangeCount = 0; // Optional
-    pipeline_layout_info.pPushConstantRanges = nullptr; // Optional
+    pipeline_layout_info.pushConstantRangeCount = push_constant_ranges.size();
+    pipeline_layout_info.pPushConstantRanges = push_constant_ranges.data();
 
     if (vkCreatePipelineLayout(context->device(), &pipeline_layout_info, nullptr, &pipeline_layout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -319,7 +335,11 @@ core::ref<pipeline_t> pipeline_builder_t::build(core::ref<context_t> context, Vk
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create raytracing pipeline!");
         }
-    } else {
+    } else if (pipeline_bind_point == VK_PIPELINE_BIND_POINT_GRAPHICS) {
+        if (renderpass == VK_NULL_HANDLE) {
+            ERROR("didnt provide a renderpass");
+            std::terminate();
+        }
         VkPipelineDynamicStateCreateInfo dynamic_state{};
         dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
@@ -410,9 +430,17 @@ core::ref<pipeline_t> pipeline_builder_t::build(core::ref<context_t> context, Vk
         if (vkCreateGraphicsPipelines(context->device(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics pipeline!");
         }
-
+    } else if (pipeline_bind_point == VK_PIPELINE_BIND_POINT_COMPUTE) {
+        VkComputePipelineCreateInfo pipeline_info{};
+        pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        pipeline_info.layout = pipeline_layout;
+        pipeline_info.stage = *pipeline_shader_stage_create_infos.data();
+        
+        if (vkCreateComputePipelines(context->device(), VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create compute pipeline!");
+        }
     }
-
+    
     // for (auto pipeline_shader_stage_create_info : pipeline_shader_stage_create_infos) {
     //     vkDestroyShaderModule(context->device(), pipeline_shader_stage_create_info.module, nullptr);
     // }

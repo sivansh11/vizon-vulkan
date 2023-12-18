@@ -17,6 +17,10 @@ add_compile_definitions(imgui
     IMGUI_IMPL_VULKAN_NO_PROTOTYPES
 )
 
+include_directories(
+    PUBLIC ../glfw/include
+)
+
 target_include_directories(imgui
     PUBLIC imgui
 )

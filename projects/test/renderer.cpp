@@ -14,6 +14,9 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
   : window(window), dispatcher(dispatcher) {
     Renderer::context = context;
 
+	gfx::vulkan::sampler_create_info_t default_sampler{};
+	gfx::vulkan::image_view_create_info_t default_image_view{};
+
 	auto [width, height] = window->get_dimensions();
 
 	depthDescriptorSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
@@ -51,12 +54,12 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	depthFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(depthImage->image_view())
+		.add_attachment_view(depthImage->image_view(default_image_view))
 		.build(context, depthRenderPass->renderpass(), width, height);
 	
 	depthPipeline = gfx::vulkan::pipeline_builder_t{}
-		.add_shader("../../assets/shaders/depth/base.vert.spv")
-		.add_shader("../../assets/shaders/depth/base.frag.spv")
+		.add_shader("../../assets/shaders/depth/base.vert")
+		.add_shader("../../assets/shaders/depth/base.frag")
 		.add_descriptor_set_layout(depthDescriptorSetLayout0)
 		.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
 		.add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
@@ -137,8 +140,8 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 		.build(context);
 
 	deferredPipeline = gfx::vulkan::pipeline_builder_t{}
-		.add_shader("../../assets/shaders/deferred/base.vert.spv")
-		.add_shader("../../assets/shaders/deferred/base.frag.spv")
+		.add_shader("../../assets/shaders/deferred/base.vert")
+		.add_shader("../../assets/shaders/deferred/base.frag")
 		.add_descriptor_set_layout(descriptorSetLayout0)
 		.add_descriptor_set_layout(descriptorSetLayout1)
 		.add_descriptor_set_layout(core::Material::getMaterialDescriptorSetLayout())
@@ -188,9 +191,9 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 	// 	.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	gBufferFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(gBufferAlbedoSpecImage->image_view())
-		.add_attachment_view(gBufferNormalImage->image_view())
-		.add_attachment_view(depthImage->image_view())
+		.add_attachment_view(gBufferAlbedoSpecImage->image_view(default_image_view))
+		.add_attachment_view(gBufferNormalImage->image_view(default_image_view))
+		.add_attachment_view(depthImage->image_view(default_image_view))
 		.build(context, deferredRenderPass->renderpass(), width, height);
 
 	deferredTimer = std::make_shared<gfx::vulkan::gpu_timer_t>(context);
@@ -230,12 +233,12 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 		.build2D(context, 1024, 1024, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	shadowFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(shadowMapImage->image_view())
+		.add_attachment_view(shadowMapImage->image_view(default_image_view))
 		.build(context, shadowRenderPass->renderpass(), 1024, 1024);
 
 	shadowPipeline = gfx::vulkan::pipeline_builder_t{}
-		.add_shader("../../assets/shaders/shadow/base.vert.spv")
-		.add_shader("../../assets/shaders/shadow/base.frag.spv")
+		.add_shader("../../assets/shaders/shadow/base.vert")
+		.add_shader("../../assets/shaders/shadow/base.frag")
 		.add_descriptor_set_layout(shadowDescriptorSetLayout0)
 		.add_descriptor_set_layout(descriptorSetLayout1)
 		.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
@@ -273,12 +276,12 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 		.build2D(context, width, height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ssaoFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(ssaoImage->image_view())
+		.add_attachment_view(ssaoImage->image_view(default_image_view))
 		.build(context, ssaoRenderPass->renderpass(), width, height);
 
 	ssaoPipeline = gfx::vulkan::pipeline_builder_t{}
-		.add_shader("../../assets/shaders/ssao/base.vert.spv")
-		.add_shader("../../assets/shaders/ssao/base.frag.spv")
+		.add_shader("../../assets/shaders/ssao/base.vert")
+		.add_shader("../../assets/shaders/ssao/base.frag")
 		.add_default_color_blend_attachment_state()
 		.add_descriptor_set_layout(ssaoDescriptorSetLayout0)
 		.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
@@ -296,19 +299,19 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 
 		ssaoSet0[i]->write()
 			.pushImageInfo(0, 1, VkDescriptorImageInfo{
-				// .sampler = gBufferDepthImage->sampler(),
-				.sampler = depthImage->sampler(),
-				.imageView = depthImage->image_view(),
+				// .sampler = gBufferDepthImage->sampler(default_sampler),
+				.sampler = depthImage->sampler(default_sampler),
+				.imageView = depthImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(1, 1, VkDescriptorImageInfo{
-				.sampler = gBufferNormalImage->sampler(),
-				.imageView = gBufferNormalImage->image_view(),
+				.sampler = gBufferNormalImage->sampler(default_sampler),
+				.imageView = gBufferNormalImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(2, 1, VkDescriptorImageInfo{
-				.sampler = noise->sampler(),
-				.imageView = noise->image_view(),
+				.sampler = noise->sampler(default_sampler),
+				.imageView = noise->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushBufferInfo(3, 1, VkDescriptorBufferInfo{
@@ -334,7 +337,7 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 		.build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	compositeFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(compositeImage->image_view())
+		.add_attachment_view(compositeImage->image_view(default_image_view))
 		.build(context, compositeRenderPass->renderpass(), width, height);
 	
 	compositeSetLayout0 = gfx::vulkan::descriptor_set_layout_builder_t{}
@@ -357,29 +360,29 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 
 		compositeSet0[i]->write()
 			.pushImageInfo(0, 1, VkDescriptorImageInfo{
-				.sampler = gBufferAlbedoSpecImage->sampler(),
-				.imageView = gBufferAlbedoSpecImage->image_view(),
+				.sampler = gBufferAlbedoSpecImage->sampler(default_sampler),
+				.imageView = gBufferAlbedoSpecImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(1, 1, VkDescriptorImageInfo{
-				.sampler = gBufferNormalImage->sampler(),
-				.imageView = gBufferNormalImage->image_view(),
+				.sampler = gBufferNormalImage->sampler(default_sampler),
+				.imageView = gBufferNormalImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(2, 1, VkDescriptorImageInfo{
-				// .sampler = gBufferDepthImage->sampler(),
-				.sampler = depthImage->sampler(),
-				.imageView = depthImage->image_view(),
+				// .sampler = gBufferDepthImage->sampler(default_sampler),
+				.sampler = depthImage->sampler(default_sampler),
+				.imageView = depthImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(3, 1, VkDescriptorImageInfo{
-				.sampler = shadowMapImage->sampler(),
-				.imageView = shadowMapImage->image_view(),
+				.sampler = shadowMapImage->sampler(default_sampler),
+				.imageView = shadowMapImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(4, 1, VkDescriptorImageInfo{
-				.sampler = ssaoImage->sampler(),
-				.imageView = ssaoImage->image_view(),
+				.sampler = ssaoImage->sampler(default_sampler),
+				.imageView = ssaoImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushBufferInfo(5, 1, VkDescriptorBufferInfo{
@@ -391,8 +394,8 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 	}
 
 	compositePipeline = gfx::vulkan::pipeline_builder_t{}
-		.add_shader("../../assets/shaders/composite/base.vert.spv")
-		.add_shader("../../assets/shaders/composite/base.frag.spv")
+		.add_shader("../../assets/shaders/composite/base.vert")
+		.add_shader("../../assets/shaders/composite/base.frag")
 		.add_default_color_blend_attachment_state()
 		.add_descriptor_set_layout(compositeSetLayout0)
 		.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
@@ -409,15 +412,15 @@ Renderer::Renderer(std::shared_ptr<core::window_t> window, std::shared_ptr<gfx::
 		.build(context, swapChainPipelineDescriptorSetLayout);
 	swapChainPipelineDescriptorSet->write()
 		.pushImageInfo(0, 1, VkDescriptorImageInfo{
-			.sampler = compositeImage->sampler(),
-			.imageView = compositeImage->image_view(),
+			.sampler = compositeImage->sampler(default_sampler),
+			.imageView = compositeImage->image_view(default_image_view),
 			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		})
 		.update();
 
 	swapChainPipeline = gfx::vulkan::pipeline_builder_t{}
-		.add_shader("../../assets/shaders/swapchain/base.vert.spv")
-		.add_shader("../../assets/shaders/swapchain/base.frag.spv")
+		.add_shader("../../assets/shaders/swapchain/base.vert")
+		.add_shader("../../assets/shaders/swapchain/base.frag")
 		.add_default_color_blend_attachment_state()
 		.add_descriptor_set_layout(swapChainPipelineDescriptorSetLayout)
 		.add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
@@ -443,6 +446,9 @@ Renderer::~Renderer() {
 }
 
 void Renderer::recreateDimentionDependentResources() {
+	gfx::vulkan::image_view_create_info_t default_image_view{};
+	gfx::vulkan::sampler_create_info_t default_sampler{};
+
 	vkDeviceWaitIdle(context->device());
 
 	auto [width, height] = window->get_dimensions();
@@ -451,7 +457,7 @@ void Renderer::recreateDimentionDependentResources() {
 		.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	depthFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(depthImage->image_view())
+		.add_attachment_view(depthImage->image_view(default_image_view))
 		.build(context, depthRenderPass->renderpass(), width, height);
 
 	gBufferAlbedoSpecImage = gfx::vulkan::image_builder_t{}
@@ -464,35 +470,35 @@ void Renderer::recreateDimentionDependentResources() {
 	// 	.build2D(context, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	gBufferFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(gBufferAlbedoSpecImage->image_view())
-		.add_attachment_view(gBufferNormalImage->image_view())
+		.add_attachment_view(gBufferAlbedoSpecImage->image_view(default_image_view))
+		.add_attachment_view(gBufferNormalImage->image_view(default_image_view))
 		// .add_attachment_view(gBufferDepthImage->imageView())
-		.add_attachment_view(depthImage->image_view())
+		.add_attachment_view(depthImage->image_view(default_image_view))
 		.build(context, deferredRenderPass->renderpass(), width, height);
 
 	ssaoImage = gfx::vulkan::image_builder_t{}
 		.build2D(context, width, height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	ssaoFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(ssaoImage->image_view())
+		.add_attachment_view(ssaoImage->image_view(default_image_view))
 		.build(context, ssaoRenderPass->renderpass(), width, height);
 
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
 		ssaoSet0[i]->write()
 			.pushImageInfo(0, 1, VkDescriptorImageInfo{
-				// .sampler = gBufferDepthImage->sampler(),
-				.sampler = depthImage->sampler(),
-				.imageView = depthImage->image_view(),
+				// .sampler = gBufferDepthImage->sampler(default_sampler),
+				.sampler = depthImage->sampler(default_sampler),
+				.imageView = depthImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(1, 1, VkDescriptorImageInfo{
-				.sampler = gBufferNormalImage->sampler(),
-				.imageView = gBufferNormalImage->image_view(),
+				.sampler = gBufferNormalImage->sampler(default_sampler),
+				.imageView = gBufferNormalImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(2, 1, VkDescriptorImageInfo{
-				.sampler = noise->sampler(),
-				.imageView = noise->image_view(),
+				.sampler = noise->sampler(default_sampler),
+				.imageView = noise->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushBufferInfo(3, 1, VkDescriptorBufferInfo{
@@ -507,35 +513,35 @@ void Renderer::recreateDimentionDependentResources() {
 		.build2D(context, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	compositeFramebuffer = gfx::vulkan::framebuffer_builder_t{}
-		.add_attachment_view(compositeImage->image_view())
+		.add_attachment_view(compositeImage->image_view(default_image_view))
 		.build(context, compositeRenderPass->renderpass(), width, height);
 
 	for (int i = 0; i < context->MAX_FRAMES_IN_FLIGHT; i++) {
 		compositeSet0[i]->write()
 			.pushImageInfo(0, 1, VkDescriptorImageInfo{
-				.sampler = gBufferAlbedoSpecImage->sampler(),
-				.imageView = gBufferAlbedoSpecImage->image_view(),
+				.sampler = gBufferAlbedoSpecImage->sampler(default_sampler),
+				.imageView = gBufferAlbedoSpecImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(1, 1, VkDescriptorImageInfo{
-				.sampler = gBufferNormalImage->sampler(),
-				.imageView = gBufferNormalImage->image_view(),
+				.sampler = gBufferNormalImage->sampler(default_sampler),
+				.imageView = gBufferNormalImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(2, 1, VkDescriptorImageInfo{
-				// .sampler = gBufferDepthImage->sampler(),
-				.sampler = depthImage->sampler(),
-				.imageView = depthImage->image_view(),
+				// .sampler = gBufferDepthImage->sampler(default_sampler),
+				.sampler = depthImage->sampler(default_sampler),
+				.imageView = depthImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(3, 1, VkDescriptorImageInfo{
-				.sampler = shadowMapImage->sampler(),
-				.imageView = shadowMapImage->image_view(),
+				.sampler = shadowMapImage->sampler(default_sampler),
+				.imageView = shadowMapImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushImageInfo(4, 1, VkDescriptorImageInfo{
-				.sampler = ssaoImage->sampler(),
-				.imageView = ssaoImage->image_view(),
+				.sampler = ssaoImage->sampler(default_sampler),
+				.imageView = ssaoImage->image_view(default_image_view),
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			})
 			.pushBufferInfo(5, 1, VkDescriptorBufferInfo{
@@ -548,8 +554,8 @@ void Renderer::recreateDimentionDependentResources() {
 
 	swapChainPipelineDescriptorSet->write()
 		.pushImageInfo(0, 1, VkDescriptorImageInfo{
-			.sampler = compositeImage->sampler(),
-			.imageView = compositeImage->image_view(),
+			.sampler = compositeImage->sampler(default_sampler),
+			.imageView = compositeImage->image_view(default_image_view),
 			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		})
 		.update();

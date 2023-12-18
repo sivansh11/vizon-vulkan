@@ -20,11 +20,11 @@
 namespace core {
 
 struct vertex_t {
-    alignas(16) glm::vec4 position;
-    alignas(16) glm::vec3 normal;
-    alignas(16) glm::vec2 uv;
-    alignas(16) glm::vec3 tangent;
-    alignas(16) glm::vec3 bi_tangent;
+    alignas(16) glm::vec3 position{};
+    alignas(16) glm::vec3 normal{};
+    alignas(16) glm::vec2 uv{};
+    alignas(16) glm::vec3 tangent{};
+    alignas(16) glm::vec3 bi_tangent{};
 };
 
 enum texture_type_t {
@@ -35,19 +35,25 @@ enum texture_type_t {
 };
 
 struct texture_info_t {
-    texture_type_t texture_type;
-    std::filesystem::path file_path;
-    glm::vec4 diffuse_color;
+    texture_type_t texture_type{};
+    std::filesystem::path file_path{};
+    glm::vec4 diffuse_color{};
 };
 
 struct material_description_t {
-    std::vector<texture_info_t> texture_infos;
+    std::vector<texture_info_t> texture_infos{};
+};
+
+struct aabb_t {
+    glm::vec3 min{};
+    glm::vec3 max{};
 };
 
 struct mesh_t {
-    std::vector<vertex_t> vertices;
-    std::vector<uint32_t> indices; 
-    material_description_t material_description;
+    std::vector<vertex_t> vertices{};
+    std::vector<uint32_t> indices{}; 
+    material_description_t material_description{};
+    aabb_t aabb{};
 };
 
 struct model_t {

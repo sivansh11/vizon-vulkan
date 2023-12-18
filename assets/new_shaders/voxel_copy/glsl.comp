@@ -1,0 +1,24 @@
+#version 450
+
+layout (local_size_x = 4, local_size_y = 4, local_size_z = 2) in;
+
+layout (set = 0, binding = 0) restrict writeonly uniform image3D voxels_rgba8;
+layout (set = 0, binding = 1) uniform usampler3D voxels_r32ui;
+
+void main() {
+    ivec3 img_coord = ivec3(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y, gl_GlobalInvocationID.z);
+    ivec3 img_size = imageSize(voxels_rgba8);
+
+    if (gl_GlobalInvocationID.x >= img_size.x && gl_GlobalInvocationID.y >= img_size.y && gl_GlobalInvocationID.z >= img_size.z) {
+        return;
+    }
+
+    vec3 uvw = (img_coord + 0.5) / img_size;
+
+    uint color_packed = texture(voxels_r32ui, uvw).r;
+
+    vec4 color_unpacked = unpackUnorm4x8(color_packed);
+
+    imageStore(voxels_rgba8, img_coord, color_unpacked);
+    // imageStore(voxels_rgba8, img_coord, vec4(1, 1, 1, 1));
+}

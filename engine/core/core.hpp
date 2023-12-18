@@ -20,6 +20,13 @@ static ref<T> make_ref(Args&&... args) {
     return std::make_shared<T>(std::forward<Args>(args)...);
 }
 
+// from: https://stackoverflow.com/a/57595105
+template <typename T, typename... Rest>
+void hash_combine(uint64_t& seed, const T& v, const Rest&... rest) {
+  seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  (hash_combine(seed, rest), ...);
+};
+
 namespace timer {
 
 using duration_t = std::chrono::duration<double, std::milli>;

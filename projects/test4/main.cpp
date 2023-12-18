@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
         .add_shader("../../assets/shaders/swapchain/base.frag")
         .build(ctx, ctx->swapchain_renderpass());
 
-    EditorCamera editor_camera{window};
+    editor_camera_t editor_camera{window};
 
     float target_FPS = 60.f;
     auto last_time = std::chrono::system_clock::now();

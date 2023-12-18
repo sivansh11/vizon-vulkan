@@ -9,12 +9,12 @@
 #include <memory>
 #include <iostream>
 
-class EditorCamera : public core::CameraComponent {
+class editor_camera_t : public core::CameraComponent {
 public:
-    EditorCamera(std::shared_ptr<core::window_t> window)
+    editor_camera_t(std::shared_ptr<core::window_t> window)
       : m_window(window) {
     }
-    ~EditorCamera() {
+    ~editor_camera_t() {
 
     }
 

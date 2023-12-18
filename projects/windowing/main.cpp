@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
 
     entt::registry scene;
 
-    EditorCamera editorCamera{window};
+    editor_camera_t editorCamera{window};
     
     auto globalDescriptorSetLayout = gfx::vulkan::descriptor_set_layout_builder_t{}
         .addLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS)

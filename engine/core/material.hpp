@@ -12,8 +12,8 @@ struct Material {
     core::ref<gfx::vulkan::descriptor_set_t> descriptor_set;
 
     core::ref<gfx::vulkan::image_t> diffuse;
-    // core::ref<gfx::vulkan::Image> specular;
-    // core::ref<gfx::vulkan::Image> normal;
+    core::ref<gfx::vulkan::image_t> specular;
+    core::ref<gfx::vulkan::image_t> normal;
 
     void update();
 

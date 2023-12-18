@@ -23,13 +23,13 @@ gpu_timer_t::~gpu_timer_t() {
     vkDestroyQueryPool(_context->device(), _queryPool, nullptr);
 }
 
-void gpu_timer_t::begin(VkCommandBuffer commandbuffer) {
+void gpu_timer_t::begin(VkCommandBuffer commandbuffer, VkPipelineStageFlagBits pipeline_stage_flag) {
     vkCmdResetQueryPool(commandbuffer, _queryPool, 0, 2);
-    vkCmdWriteTimestamp(commandbuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, _queryPool, 0);
+    vkCmdWriteTimestamp(commandbuffer, pipeline_stage_flag, _queryPool, 0);
 }
 
-void gpu_timer_t::end(VkCommandBuffer commandbuffer) {
-    vkCmdWriteTimestamp(commandbuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _queryPool, 1);
+void gpu_timer_t::end(VkCommandBuffer commandbuffer, VkPipelineStageFlagBits pipeline_stage_flag) {
+    vkCmdWriteTimestamp(commandbuffer, pipeline_stage_flag, _queryPool, 1);
 }
 
 std::optional<float> gpu_timer_t::get_time() {

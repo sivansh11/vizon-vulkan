@@ -34,6 +34,7 @@ public:
     void flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     
+    // todo: need to add commandbuffer version
     static void copy(core::ref<context_t> context, buffer_t& src_buffer, buffer_t& dst_buffer, const VkBufferCopy& buffer_copy);
 
     VkBuffer& buffer() { return _buffer; }

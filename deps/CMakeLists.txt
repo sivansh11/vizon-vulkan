@@ -18,6 +18,7 @@ set(BUILD_CSHARP OFF CACHE BOOL "" FORCE)
 add_subdirectory(screen_capture_lite)
 add_subdirectory(imgui)
 
+set(SPIRV_WERROR OFF CACHE BOOL "" FORCE)
 add_subdirectory(glslang)
 add_subdirectory(SPIRV-Headers)
 add_subdirectory(SPIRV-Tools)

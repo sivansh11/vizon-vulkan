@@ -1,0 +1,144 @@
+#version 450
+#extension GL_EXT_scalar_block_layout : enable
+
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+struct plane_t {
+    vec3 normal;
+    float distance; 
+};
+
+struct aabb_t {
+    vec3 min;
+    vec3 max;
+};
+
+float plane_get_signed_distance_to_plane(in vec3 point);
+
+bool is_aabb_on_or_forward_plane(in plane_t plane, vec3 center, vec3 extent);
+
+bool is_visible(in aabb_t aabb);
+
+bool project_sphere(vec3 center, float radius, float near, float p00, float p11, out vec4 aabb);
+
+layout (set = 0, binding = 0, scalar) uniform settigns {
+    plane_t frustum_near;
+    plane_t frustum_far;
+    plane_t frustum_right;
+    plane_t frustum_left;
+    plane_t frustum_top;
+    plane_t frustum_bottom;
+    uint size;
+    float p00;
+    float p11;
+    float near;
+    float far;
+    float hiz_wdith;
+    float hiz_height;
+};
+
+layout (set = 0, binding = 1, scalar) buffer aabb_ssbo {
+    aabb_t aabbs[];
+};
+
+struct VkDrawIndexedIndirectCommand {
+    uint    indexCount;
+    uint    instanceCount;
+    uint    firstIndex;
+    int     vertexOffset;
+    uint    firstInstance;
+};
+
+layout (set = 0, binding = 2, scalar) buffer VkDrawIndexedIndirectCommand_ssbo {
+    VkDrawIndexedIndirectCommand commands[];
+};
+
+layout (set = 0, binding = 3) uniform sampler2D hiz;
+
+void main() {
+    if (gl_GlobalInvocationID.x >= size) return;
+    aabb_t aabb = aabbs[gl_GlobalInvocationID.x];
+    if (is_visible(aabb)) {
+        atomicAdd(commands[gl_GlobalInvocationID.x].instanceCount, 1);        
+    } else {
+
+    }
+}
+
+float plane_get_signed_distance_to_plane(in plane_t plane, in vec3 point) {
+    return dot(plane.normal, point) - plane.distance;
+}
+
+bool is_aabb_on_or_forward_plane(in plane_t plane, vec3 center, vec3 extent) {
+    const float r = extent.x * abs(plane.normal.x) +
+                    extent.y * abs(plane.normal.y) +
+                    extent.z * abs(plane.normal.z);
+    return -r <= plane_get_signed_distance_to_plane(plane, center);
+}
+
+bool project_sphere(vec3 center, float radius, float near, float p00, float p11, out vec4 aabb) {
+    if (center.z < radius + near) return false;
+
+    vec2 cx = -center.xz;
+	vec2 vx = vec2(sqrt(dot(cx, cx) - radius * radius), radius);
+	vec2 minx = mat2(vx.x, vx.y, -vx.y, vx.x) * cx;
+	vec2 maxx = mat2(vx.x, -vx.y, vx.y, vx.x) * cx;
+
+    vec2 cy = -center.yz;
+	vec2 vy = vec2(sqrt(dot(cy, cy) - radius * radius), radius);
+	vec2 miny = mat2(vy.x, vy.y, -vy.y, vy.x) * cy;
+	vec2 maxy = mat2(vy.x, -vy.y, vy.y, vy.x) * cy;
+    
+    aabb = vec4(minx.x / minx.y * p00, miny.x / miny.y * p11, maxx.x / maxx.y * p00, maxy.x / maxy.y * p11);
+	aabb = aabb.xwzy * vec4(0.5f, -0.5f, 0.5f, -0.5f) + vec4(0.5f); // clip space -> uv space
+
+	return true;
+}
+
+bool is_visible(in aabb_t aabb) {
+    const vec3 aabb_center  = (aabb.min + aabb.max) * 0.5;
+    const vec3 aabb_extents = aabb.max - aabb_center;
+
+    const vec3 global_center = aabb_center;
+
+    const vec3 right   = vec3( 1,  0,  0) * aabb_extents.x; 
+    const vec3 up      = vec3( 0,  1,  0) * aabb_extents.y; 
+    const vec3 forward = vec3( 0,  0, -1) * aabb_extents.z; 
+
+    const float i = abs(dot(vec3(1, 0, 0), right)) +
+                    abs(dot(vec3(1, 0, 0), up)) +
+                    abs(dot(vec3(1, 0, 0), forward));
+    const float j = abs(dot(vec3(0, 1, 0), right)) +
+                    abs(dot(vec3(0, 1, 0), up)) +
+                    abs(dot(vec3(0, 1, 0), forward));
+    const float k = abs(dot(vec3(0, 0, 1), right)) +
+                    abs(dot(vec3(0, 0, 1), up)) +
+                    abs(dot(vec3(0, 0, 1), forward));
+
+    vec3 global_extent = vec3(i, j, k);
+
+    bool is_in_frustum = is_aabb_on_or_forward_plane(frustum_near, global_center, global_extent)   && 
+                         is_aabb_on_or_forward_plane(frustum_far, global_center, global_extent)    && 
+                         is_aabb_on_or_forward_plane(frustum_top, global_center, global_extent)    && 
+                         is_aabb_on_or_forward_plane(frustum_bottom, global_center, global_extent) && 
+                         is_aabb_on_or_forward_plane(frustum_right, global_center, global_extent)  && 
+                         is_aabb_on_or_forward_plane(frustum_left, global_center, global_extent); 
+
+    bool visible = is_in_frustum;
+
+    // if (is_in_frustum) {
+    //     vec4 new_aabb;
+    //     vec3 center = mix(aabb.min, aabb.max, 0.5);
+    //     float radius = distance(aabb.min, aabb.max) * 0.5;
+    //     if (project_sphere(center, radius, near, p00, p11, new_aabb)) {
+    //         float width = (new_aabb.z - new_aabb.x) * hiz_wdith;
+    //         float height = (new_aabb.w - new_aabb.y) * hiz_height;
+    //         float level = floor(log2(max(width, height)));
+    //         float depth = textureLod(hiz, (new_aabb.xy + new_aabb.zw) * 0.5, level).x;
+    //         float depth_sphere = near / (center.z - radius);
+    //         visible = visible && depth_sphere >= depth;
+    //     }
+    // }
+
+    return visible;
+}

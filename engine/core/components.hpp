@@ -25,6 +25,10 @@ public:
 
     const glm::vec3& getPos() const { return m_pos; }
 
+    float fov() const { return m_fov; }
+    float near() const { return m_near; }
+    float far() const { return m_far; }
+
     glm::vec3 m_pos{0, 0, 0};
     glm::mat4 m_projection{1.0f};
     glm::mat4 m_view{1};

@@ -45,7 +45,7 @@ core::ref<renderpass_t> renderpass_builder_t::build(core::ref<context_t> context
 	dependencies[0].dstStageMask |= depth_added ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT : 0;
 	dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
 	dependencies[0].dstAccessMask = color_attachments_refrences.size() > 0 ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : 0;
-	dependencies[0].dstAccessMask = depth_added ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT : 0;
+	dependencies[0].dstAccessMask |= depth_added ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT : 0;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
     
     dependencies[1].srcSubpass = 0;

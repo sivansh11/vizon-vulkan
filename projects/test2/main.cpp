@@ -100,8 +100,8 @@ int main(int argc, char **argv) {
         .build(ctx);
 
     auto pipeline = gfx::vulkan::pipeline_builder_t{}
-        .add_shader("../../assets/shaders/test2/diffuse_only/shader.vert.spv")
-        .add_shader("../../assets/shaders/test2/diffuse_only/shader.frag.spv")
+        .add_shader("../../assets/shaders/test2/diffuse_only/shader.vert")
+        .add_shader("../../assets/shaders/test2/diffuse_only/shader.frag")
         .add_descriptor_set_layout(descriptor_set_0_layout)
         .add_descriptor_set_layout(descriptor_set_1_layout)
         .add_descriptor_set_layout(material_descriptor_set_layout)
@@ -154,8 +154,8 @@ int main(int argc, char **argv) {
         .add_dynamic_state(VK_DYNAMIC_STATE_VIEWPORT)
         .add_dynamic_state(VK_DYNAMIC_STATE_SCISSOR)
         .add_descriptor_set_layout(swapchain_descriptor_set_layout)
-        .add_shader("../../assets/shaders/test2/swapchain/base.vert.spv")
-        .add_shader("../../assets/shaders/test2/swapchain/base.frag.spv")
+        .add_shader("../../assets/shaders/test2/swapchain/base.vert")
+        .add_shader("../../assets/shaders/test2/swapchain/base.frag")
         .build(ctx, ctx->swapchain_renderpass());    
 
 
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    EditorCamera editor_camera{window};
+    editor_camera_t editor_camera{window};
 
     float target_FPS = 60.f;
     auto last_time = std::chrono::system_clock::now();

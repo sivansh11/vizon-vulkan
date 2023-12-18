@@ -15,8 +15,8 @@ public:
     gpu_timer_t(core::ref<context_t> context);
     ~gpu_timer_t();
 
-    void begin(VkCommandBuffer commandbuffer);
-    void end(VkCommandBuffer commandbuffer);
+    void begin(VkCommandBuffer commandbuffer, VkPipelineStageFlagBits pipeline_stage_flag = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    void end(VkCommandBuffer commandbuffer, VkPipelineStageFlagBits pipeline_stage_flag = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
     std::optional<float> get_time();
 

@@ -54,7 +54,7 @@ mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, cons
     for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
         vertex_t vertex{};
 
-        vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1 };
+        vertex.position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
         vertex.normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
 
         if (mesh->mTextureCoords[0]) {
@@ -69,6 +69,15 @@ mesh_t process_mesh(model_loading_info_t& model_loading_info, aiMesh *mesh, cons
         } else {
 
         }
+
+        loaded_mesh.aabb.min.x = std::min(loaded_mesh.aabb.min.x, vertex.position.x);
+        loaded_mesh.aabb.min.y = std::min(loaded_mesh.aabb.min.y, vertex.position.y);
+        loaded_mesh.aabb.min.z = std::min(loaded_mesh.aabb.min.z, vertex.position.z);
+
+        loaded_mesh.aabb.max.x = std::max(loaded_mesh.aabb.max.x, vertex.position.x);
+        loaded_mesh.aabb.max.y = std::max(loaded_mesh.aabb.max.y, vertex.position.y);
+        loaded_mesh.aabb.max.z = std::max(loaded_mesh.aabb.max.z, vertex.position.z);
+
         loaded_mesh.vertices.push_back(vertex);
     }
     
@@ -212,8 +221,8 @@ core::ref<Material> Model::processMaterial(aiMaterial *material) {
     
     // load all the textures and parameters
     mat->diffuse = loadMaterialTexture(material, aiTextureType_DIFFUSE, "diffuse");
-    // mat->specular = loadMaterialTexture(material, aiTextureType_SPECULAR, "diffuse");
-    // mat->normal = loadMaterialTexture(material, aiTextureType_NORMALS, "diffuse");
+    mat->specular = loadMaterialTexture(material, aiTextureType_SPECULAR, "specular");
+    mat->normal = loadMaterialTexture(material, aiTextureType_NORMALS, "normal");
 
     mat->update();
 

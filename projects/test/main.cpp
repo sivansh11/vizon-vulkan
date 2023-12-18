@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     // double lastTime = glfwGetTime();
     float targetFPS = 5000.f;
 
-    EditorCamera editorCamera{window};
+    editor_camera_t editorCamera{window};
 
     auto lastTime = std::chrono::system_clock::now();
 

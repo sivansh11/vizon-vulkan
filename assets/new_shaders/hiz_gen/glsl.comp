@@ -1,0 +1,31 @@
+#version 450
+
+layout (local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
+
+layout (set = 0, binding = 0) restrict writeonly uniform image2D depth_out;
+layout (set = 0, binding = 1) uniform sampler2D depth_in;  // downn sample
+
+void main() {
+    ivec2 img_coord = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    ivec2 img_size = imageSize(depth_out);
+    vec2 uv = (img_coord + 0.5) / img_size;
+
+    float res = texture(depth_in, uv).r;
+
+    float check;
+
+    check = textureOffset(depth_in, uv, ivec2(1, 0)).r;
+    if (res < check) {
+        res = check;  // res > check
+    } 
+    check = textureOffset(depth_in, uv, ivec2( 0, 1)).r;
+    if (res < check) {
+        res = check;  // res > check
+    } 
+    check = textureOffset(depth_in, uv, ivec2( 1, 1)).r;
+    if (res < check) {
+        res = check;  // res > check
+    } 
+
+    imageStore(depth_out, img_coord, vec4(res, 0, 0, 0));  // only r matters, other dont   
+}
